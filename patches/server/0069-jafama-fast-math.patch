@@ -4,23 +4,6 @@ Date: Fri, 12 Feb 2021 15:18:15 -0500
 Subject: [PATCH] jafama fast math
 
 
-diff --git a/pom.xml b/pom.xml
-index 9402ec96f626e5e4f36f7dd678454f9efeb7e254..35845531dc7be489f67698f91ffd3cc7f5f1195c 100644
---- a/pom.xml
-+++ b/pom.xml
-@@ -182,6 +182,12 @@
-             <artifactId>commons-rng-core</artifactId>
-             <version>1.3</version>
-         </dependency>
-+        <!-- Fast Math -->
-+        <dependency>
-+            <groupId>net.jafama</groupId>
-+            <artifactId>jafama</artifactId>
-+            <version>2.3.2</version>
-+        </dependency>
-     </dependencies>
- 
-     <repositories>
 diff --git a/src/main/java/net/minecraft/server/ChunkGeneratorAbstract.java b/src/main/java/net/minecraft/server/ChunkGeneratorAbstract.java
 index de469f9b4f0fecc05dca7a5aacd1308db6f80a18..8f2e2c8d7d852ef13352d90930de691d901eb326 100644
 --- a/src/main/java/net/minecraft/server/ChunkGeneratorAbstract.java
