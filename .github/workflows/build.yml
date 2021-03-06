@@ -61,6 +61,10 @@ jobs:
       with:
         path: Paper/work/Minecraft/${{ steps.mcver.outputs.mcver }}
         key: ${{ steps.mcver.outputs.mcver }}-${{ runner.os }}-java-${{ matrix.java }}-minecraft-decomp
+    
+    - name: Remove Sand Duping Patch
+      run: |
+        rm -rvf ./Paper/Spigot-Server-Patches/0498-*
         
     - name: Apply Patches
       run: |
