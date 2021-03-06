@@ -64,7 +64,7 @@ jobs:
     
     - name: Remove Sand Duping Patch
       run: |
-        rm -rvf ./Paper/Spigot-Server-Patches/0498-*
+        rm -rvf ./Paper/Spigot-Server-Patches/*-Fix-sand-duping.patch
         
     - name: Apply Patches
       run: |
