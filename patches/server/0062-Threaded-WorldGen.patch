@@ -305,7 +305,7 @@ index e358e797c87584891d1ffbaf3604c5db6768ca58..5b9e665938d45cea7cf6d18f577a05c6
          LOGGER.info("Closing Thread Pool");
          SystemUtils.shutdownServerThreadPool(); // Paper
 diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-index 03c63d51343b3d6ea2871a3170a047e662ba0b94..c726e071f33da051fa91db265d32f94b6b5e1891 100644
+index 6d1550f6943e50db1f045263f63cffe8c12e8073..2dbbb107270064bbd6581ec828abc1578ac5cc86 100644
 --- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
 +++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
 @@ -57,6 +57,18 @@ import org.spigotmc.AsyncCatcher;
@@ -327,7 +327,7 @@ index 03c63d51343b3d6ea2871a3170a047e662ba0b94..c726e071f33da051fa91db265d32f94b
      private static final Logger LOGGER = LogManager.getLogger();
      public static final int GOLDEN_TICKET = 33 + ChunkStatus.b();
      // Paper start - faster copying
-@@ -1255,7 +1267,7 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+@@ -1249,7 +1261,7 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
                  return;
              }
              // Paper end
@@ -379,10 +379,10 @@ index d98ac030e205dbb1512ef6b837e2f3fdd208e231..451ea5b703d01664942899ca62cf789e
      }
  }
 diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index 68fbbcac7b6b2f24a42c3a63825f940e52f6f51a..3c2abebe3e9d2fd5f54776839744f674a8d3a8e9 100644
+index 88e6ee95972310c7dd3878f7dae55e852fd7cc4a..dea97501e70e8936d53aeea586db682eb48b2122 100644
 --- a/src/main/java/net/minecraft/server/WorldServer.java
 +++ b/src/main/java/net/minecraft/server/WorldServer.java
-@@ -2685,28 +2685,26 @@ public class WorldServer extends World implements GeneratorAccessSeed {
+@@ -2659,28 +2659,26 @@ public class WorldServer extends World implements GeneratorAccessSeed {
  
          // Paper start
          BlockPosition blockposition1 = blockposition.immutableCopy();
