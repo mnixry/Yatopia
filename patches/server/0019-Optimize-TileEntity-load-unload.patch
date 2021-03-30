@@ -4,11 +4,11 @@ Date: Wed, 5 Aug 2020 08:08:44 -0500
 Subject: [PATCH] Optimize TileEntity load/unload
 
 
-diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 4ffaf36b40b32be25bd1944d8b8ddbc342256947..64195edf7c277d581be4d726675b09bd4a263793 100644
---- a/src/main/java/net/minecraft/server/World.java
-+++ b/src/main/java/net/minecraft/server/World.java
-@@ -42,8 +42,8 @@ public abstract class World implements GeneratorAccess, AutoCloseable {
+diff --git a/src/main/java/net/minecraft/world/level/World.java b/src/main/java/net/minecraft/world/level/World.java
+index f6f233ea7344924303b7462b88eaf348de439c0e..42ba62dbee134b2bc5f8065a4cd3f2811aa54310 100644
+--- a/src/main/java/net/minecraft/world/level/World.java
++++ b/src/main/java/net/minecraft/world/level/World.java
+@@ -105,8 +105,8 @@ public abstract class World implements GeneratorAccess, AutoCloseable {
      public static final ResourceKey<World> THE_END = ResourceKey.a(IRegistry.L, new MinecraftKey("the_end"));
      private static final EnumDirection[] a = EnumDirection.values();
      //public final List<TileEntity> tileEntityList = Lists.newArrayList(); // Paper - remove unused list
@@ -16,6 +16,6 @@ index 4ffaf36b40b32be25bd1944d8b8ddbc342256947..64195edf7c277d581be4d726675b09bd
 -    protected final List<TileEntity> tileEntityListPending = Lists.newArrayList();
 +    public final List<TileEntity> tileEntityListTick = me.jellysquid.mods.lithium.common.util.collections.HashedList.wrapper(Lists.newArrayList()); // Yatopia
 +    protected final List<TileEntity> tileEntityListPending = me.jellysquid.mods.lithium.common.util.collections.HashedList.wrapper(Lists.newArrayList()); // Yatopia
-     protected final java.util.Set<TileEntity> tileEntityListUnload = com.google.common.collect.Sets.newHashSet();
+     protected final java.util.Set<TileEntity> tileEntityListUnload = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>()); // Airplane - use set with faster contains
      public final Thread serverThread;
      private final boolean debugWorld;

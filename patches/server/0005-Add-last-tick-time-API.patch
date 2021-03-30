@@ -7,10 +7,10 @@ Original patch by:
 Co-authored-by: tr7zw <tr7zw@live.de>
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index d4dc05a1066bfcd4cdc1bfa04e46aa2d8d6e2fe5..ada93970e324c44aba4f3e817ccaec8a44fa4af3 100644
+index 34552a2bd96428013dba6f2bead737af75a28d0d..e283960750cff2f45695117ef873cf1f941c27bf 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
-@@ -936,6 +936,8 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+@@ -1055,6 +1055,8 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
      // Paper End
      // Spigot End
  
@@ -19,7 +19,7 @@ index d4dc05a1066bfcd4cdc1bfa04e46aa2d8d6e2fe5..ada93970e324c44aba4f3e817ccaec8a
      protected void w() {
          try {
              long serverStartTime = SystemUtils.getMonotonicNanos(); // Paper
-@@ -1007,7 +1009,9 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+@@ -1126,7 +1128,9 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
                      this.a(gameprofilertick);
                      this.methodProfiler.a();
                      this.methodProfiler.enter("tick");
@@ -30,10 +30,10 @@ index d4dc05a1066bfcd4cdc1bfa04e46aa2d8d6e2fe5..ada93970e324c44aba4f3e817ccaec8a
                      this.X = true;
                      // Purpur start - tps catchup
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index eca800e8396c765ea77c0cbc171bb1a6e4e8707f..289ea917d3b5327e1c7dbffdb9ba171cc5052627 100644
+index 7771fa5c98809b6c3aeff78ab9d0b8ec2178accc..449fce2d76c701b789dd09326c9a8fc818b39c45 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-@@ -2466,4 +2466,6 @@ public final class CraftServer implements Server {
+@@ -2540,4 +2540,6 @@ public final class CraftServer implements Server {
          return getServer().lagging;
      }
      // Purpur end

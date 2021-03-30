@@ -5,10 +5,10 @@ Subject: [PATCH] Add GameProfileLookupEvent
 
 
 diff --git a/src/main/java/com/destroystokyo/paper/profile/CraftPlayerProfile.java b/src/main/java/com/destroystokyo/paper/profile/CraftPlayerProfile.java
-index 2751ce7f1556da07ef853807a588f096adf6ef7f..8bda2180576d3c58ad592e6158621160a8c4c5cf 100644
+index 040fd0c3fc4bc3a04fe5dff919a41fe9b474708e..21d92c3e8e2e953bfc85c1ba3ed54ca0dae751fb 100644
 --- a/src/main/java/com/destroystokyo/paper/profile/CraftPlayerProfile.java
 +++ b/src/main/java/com/destroystokyo/paper/profile/CraftPlayerProfile.java
-@@ -183,13 +183,24 @@ public class CraftPlayerProfile implements PlayerProfile {
+@@ -187,13 +187,24 @@ public class CraftPlayerProfile implements PlayerProfile {
  
          boolean isCompleteFromCache = this.completeFromCache(true, onlineMode);
          if (onlineMode && (!isCompleteFromCache || textures && !hasTextures())) {
@@ -39,11 +39,11 @@ index 2751ce7f1556da07ef853807a588f096adf6ef7f..8bda2180576d3c58ad592e6158621160
          }
          return profile.isComplete() && (!onlineMode || !textures || hasTextures());
      }
-diff --git a/src/main/java/net/minecraft/server/TileEntitySkull.java b/src/main/java/net/minecraft/server/TileEntitySkull.java
-index 579a81e521fdfabfa0318d06c6760a8ab7a88c1e..ab553f408b31cb7e2d281cc3d8fe42e19dc717d9 100644
---- a/src/main/java/net/minecraft/server/TileEntitySkull.java
-+++ b/src/main/java/net/minecraft/server/TileEntitySkull.java
-@@ -77,7 +77,18 @@ public class TileEntitySkull extends TileEntity /*implements ITickable*/ { // Pa
+diff --git a/src/main/java/net/minecraft/world/level/block/entity/TileEntitySkull.java b/src/main/java/net/minecraft/world/level/block/entity/TileEntitySkull.java
+index 1d1d708d1cbebb5a3ee50d5f46d9d953f22447dc..ef1a882e4414ccc6fa9791f8eb83bde00ee4f29d 100644
+--- a/src/main/java/net/minecraft/world/level/block/entity/TileEntitySkull.java
++++ b/src/main/java/net/minecraft/world/level/block/entity/TileEntitySkull.java
+@@ -86,7 +86,18 @@ public class TileEntitySkull extends TileEntity /*implements ITickable*/ { // Pa
  
                          if ( property == null )
                          {

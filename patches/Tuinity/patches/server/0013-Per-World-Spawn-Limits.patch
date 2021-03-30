@@ -3,9 +3,10 @@ From: Chase Whipple <chasewhip20@gmail.com>
 Date: Thu, 26 Mar 2020 21:45:54 -0600
 Subject: [PATCH] Per World Spawn Limits
 
+This patch is licensed under the MIT license. See /licenses/MIT.md.
 
 diff --git a/src/main/java/com/tuinity/tuinity/config/TuinityConfig.java b/src/main/java/com/tuinity/tuinity/config/TuinityConfig.java
-index 994c735958dc0ee0dfd8c28820fcd4f50057aad0..a302cda14aa2dd6550cca03b07be21cdcb993061 100644
+index 5aa558bd05c4ab735730263f220478c36a4ba0fd..6473b951788a3ecbeee4811ea0288ff47b48355f 100644
 --- a/src/main/java/com/tuinity/tuinity/config/TuinityConfig.java
 +++ b/src/main/java/com/tuinity/tuinity/config/TuinityConfig.java
 @@ -269,6 +269,23 @@ public final class TuinityConfig {
@@ -34,10 +35,10 @@ index 994c735958dc0ee0dfd8c28820fcd4f50057aad0..a302cda14aa2dd6550cca03b07be21cd
  }
 \ No newline at end of file
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
-index a5e2c7924580489c19e7c80536feb0f96df55d71..506d14966fd8fd91fa26274537a2cb7b5bb9fdf1 100644
+index 494e3b65880a5a5ced4adc8b4d5a51d2e78a51b0..77057470addd6e6934bd6c32b0c36dea11bbb95d 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
-@@ -341,6 +341,14 @@ public class CraftWorld implements World {
+@@ -342,6 +342,14 @@ public class CraftWorld implements World {
          this.generator = gen;
  
          environment = env;

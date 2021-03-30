@@ -5,10 +5,10 @@ Subject: [PATCH] ItemStack convenience methods
 
 
 diff --git a/src/main/java/org/bukkit/Material.java b/src/main/java/org/bukkit/Material.java
-index 2a3becabbd10fa8ffd19f35a3f6d8a6bfcb388c3..f71c9fd069309ef330d9065760b80ec10de7e18b 100644
+index 0a31a5321ac519568db936c94394f71b2e2fcec1..42a77a5f5b8968351a737cb1fd7cebf160b13245 100644
 --- a/src/main/java/org/bukkit/Material.java
 +++ b/src/main/java/org/bukkit/Material.java
-@@ -8642,4 +8642,36 @@ public enum Material implements Keyed {
+@@ -8660,4 +8660,36 @@ public enum Material implements Keyed {
              // </editor-fold>
          }
      }
@@ -46,7 +46,7 @@ index 2a3becabbd10fa8ffd19f35a3f6d8a6bfcb388c3..f71c9fd069309ef330d9065760b80ec1
 +    // Purpur end
  }
 diff --git a/src/main/java/org/bukkit/inventory/ItemStack.java b/src/main/java/org/bukkit/inventory/ItemStack.java
-index 4f2520f7a4ca6d57a85924ada1068a055b9a01fb..23cef1e67236a879525f39da994efc9a9c5cd289 100644
+index 58f99e3ebac9a01ebffe4d208e16cbee474d4aa3..314658c7dac1b1fbb440ec85133e6670e52ba684 100644
 --- a/src/main/java/org/bukkit/inventory/ItemStack.java
 +++ b/src/main/java/org/bukkit/inventory/ItemStack.java
 @@ -17,6 +17,18 @@ import org.bukkit.inventory.meta.ItemMeta;
@@ -68,8 +68,8 @@ index 4f2520f7a4ca6d57a85924ada1068a055b9a01fb..23cef1e67236a879525f39da994efc9a
  
  /**
   * Represents a stack of items.
-@@ -792,4 +804,627 @@ public class ItemStack implements Cloneable, ConfigurationSerializable {
-         return itemMeta.hasItemFlag(flag);
+@@ -843,4 +855,627 @@ public class ItemStack implements Cloneable, ConfigurationSerializable, net.kyor
+         return itemMeta != null && itemMeta.hasItemFlag(flag);
      }
      // Paper end
 +

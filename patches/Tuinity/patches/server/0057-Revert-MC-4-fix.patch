@@ -12,11 +12,11 @@ But this patch is going to cause problems on the order of 1.0e-4.
 I do not want to deal with clipping problems. The very fact it works
 shows it's causing the clipping to occur serverside.
 
-diff --git a/src/main/java/net/minecraft/server/EntityItem.java b/src/main/java/net/minecraft/server/EntityItem.java
-index f41aaa7623c052b9f4044898d1bdee898c03057a..d99cecc4075338d7b8f154ab94d8ac04190ba371 100644
---- a/src/main/java/net/minecraft/server/EntityItem.java
-+++ b/src/main/java/net/minecraft/server/EntityItem.java
-@@ -526,7 +526,7 @@ public class EntityItem extends Entity {
+diff --git a/src/main/java/net/minecraft/world/entity/item/EntityItem.java b/src/main/java/net/minecraft/world/entity/item/EntityItem.java
+index 575833807ff647f30d7c2b7abcd01701c7dec85b..5dc3670f35b04d933e96c4b42aa9fbcf941e69c7 100644
+--- a/src/main/java/net/minecraft/world/entity/item/EntityItem.java
++++ b/src/main/java/net/minecraft/world/entity/item/EntityItem.java
+@@ -553,7 +553,7 @@ public class EntityItem extends Entity {
  
      // Paper start - fix MC-4
      public void setPositionRaw(double x, double y, double z) {

@@ -9,10 +9,10 @@ Co-authored-by: Mykyta Komarnytskyy <nkomarn@hotmail.com>
 Co-authored-by: Ivan Pekov <ivan@mrivanplays.com>
 
 diff --git a/pom.xml b/pom.xml
-index e790d779d24c2c8d4a74d458839c11bc494eeef1..04ec0b474a234c04450f04ecf7336d3bb0947420 100644
+index dc7bca7a09cb173af53c916d8f231249af8b1cdb..16234696393f0d61bdaa7009c80fa0996a7f1712 100644
 --- a/pom.xml
 +++ b/pom.xml
-@@ -176,6 +176,12 @@
+@@ -183,6 +183,12 @@
              <artifactId>commons-math3</artifactId>
              <version>3.6.1</version>
          </dependency>

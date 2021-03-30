@@ -5,10 +5,10 @@ Subject: [PATCH] Add GameProfileLookupEvent
 
 
 diff --git a/pom.xml b/pom.xml
-index 0a4a2d639e53f6cccc1877896818bbf2d381044d..e1c693d4d9e26e29d81ca0eee92a11e7dc2943be 100644
+index 4aefa793f1db26908e5476f03d89858b5925e3cb..42004d8b2028a2bf62435b708aa7a47cba223f0d 100644
 --- a/pom.xml
 +++ b/pom.xml
-@@ -52,6 +52,10 @@
+@@ -42,6 +42,10 @@
              <id>sonatype</id>
              <url>https://oss.sonatype.org/content/groups/public/</url>
          </repository>
@@ -18,9 +18,9 @@ index 0a4a2d639e53f6cccc1877896818bbf2d381044d..e1c693d4d9e26e29d81ca0eee92a11e7
 +        </repository>
      </repositories>
  
-     <pluginRepositories>
-@@ -62,6 +66,13 @@
-     </pluginRepositories>
+     <!-- Paper start -->
+@@ -59,6 +63,13 @@
+     <!-- Paper end -->
  
      <dependencies>
 +	<!-- Authlib for Gameprofiles -->
@@ -30,9 +30,9 @@ index 0a4a2d639e53f6cccc1877896818bbf2d381044d..e1c693d4d9e26e29d81ca0eee92a11e7
 +            <version>1.5.25</version>
 +            <scope>provided</scope>
 +        </dependency>
+         <!-- Paper start -->
          <dependency>
-             <groupId>it.unimi.dsi</groupId>
-             <artifactId>fastutil</artifactId>
+             <groupId>net.kyori</groupId>
 diff --git a/src/main/java/dev/tr7zw/yatopia/events/GameProfileLookupEvent.java b/src/main/java/dev/tr7zw/yatopia/events/GameProfileLookupEvent.java
 new file mode 100644
 index 0000000000000000000000000000000000000000..313fe42442a93db76f91eaab50a345340f314fa8

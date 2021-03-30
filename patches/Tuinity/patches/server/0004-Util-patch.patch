@@ -6,61 +6,55 @@ Subject: [PATCH] Util patch
 
 diff --git a/src/main/java/com/tuinity/tuinity/chunk/SingleThreadChunkRegionManager.java b/src/main/java/com/tuinity/tuinity/chunk/SingleThreadChunkRegionManager.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..20150ad0750a648d349701a09b31881be124e46c
+index 0000000000000000000000000000000000000000..5ea5b3933725d80dd193e815ac507ee51ee17630
 --- /dev/null
 +++ b/src/main/java/com/tuinity/tuinity/chunk/SingleThreadChunkRegionManager.java
-@@ -0,0 +1,488 @@
+@@ -0,0 +1,477 @@
 +package com.tuinity.tuinity.chunk;
 +
-+import co.aikar.timings.MinecraftTimings;
-+import co.aikar.timings.Timing;
 +import com.tuinity.tuinity.util.maplist.IteratorSafeOrderedReferenceSet;
 +import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 +import it.unimi.dsi.fastutil.objects.ReferenceLinkedOpenHashSet;
 +import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
-+import net.minecraft.server.ChunkCoordIntPair;
 +import net.minecraft.server.MCUtil;
-+import net.minecraft.server.WorldServer;
++import net.minecraft.server.level.WorldServer;
++import net.minecraft.world.level.ChunkCoordIntPair;
 +import java.util.ArrayList;
 +import java.util.Arrays;
-+import java.util.EnumMap;
 +import java.util.Iterator;
 +import java.util.List;
-+import java.util.function.Function;
++import java.util.function.Supplier;
 +
-+public final class SingleThreadChunkRegionManager<T extends Enum<T> & SingleThreadChunkRegionManager.RegionDataCreator<T>> {
++public final class SingleThreadChunkRegionManager {
 +
-+    static final int REGION_SECTION_MERGE_RADIUS = 1;
-+    // if this becomes > 8, then the RegionSection needs to be properly modified (see bitset)
-+    public static final int REGION_CHUNK_SIZE = 32;
-+    public static final int REGION_CHUNK_SIZE_SHIFT = 5; // log2(REGION_CHUNK_SIZE)
++    protected final int regionSectionMergeRadius;
++    protected final int regionSectionChunkSize;
++    public final int regionChunkShift; // log2(REGION_CHUNK_SIZE)
 +
 +    public final WorldServer world;
-+    public final Class<T> dataClass;
 +    public final String name;
 +
-+    public final Timing addChunkTimings;
-+    public final Timing removeChunkTimings;
-+    public final Timing regionRecalculateTimings;
-+
-+    protected final Long2ObjectOpenHashMap<RegionSection<T>> regionsBySection = new Long2ObjectOpenHashMap<>();
-+    protected final ReferenceLinkedOpenHashSet<Region<T>> needsRecalculation = new ReferenceLinkedOpenHashSet<>();
++    protected final Long2ObjectOpenHashMap<RegionSection> regionsBySection = new Long2ObjectOpenHashMap<>();
++    protected final ReferenceLinkedOpenHashSet<Region> needsRecalculation = new ReferenceLinkedOpenHashSet<>();
 +    protected final int minSectionRecalcCount;
 +    protected final double maxDeadRegionPercent;
++    protected final Supplier<RegionData> regionDataSupplier;
++    protected final Supplier<RegionSectionData> regionSectionDataSupplier;
 +
-+    public SingleThreadChunkRegionManager(final WorldServer world, final Class<T> enumClass,
-+                                          final int minSectionRecalcCount, final double maxDeadRegionPercent,
-+                                          final String name) {
++    public SingleThreadChunkRegionManager(final WorldServer world, final int minSectionRecalcCount,
++                                          final double maxDeadRegionPercent, final int sectionMergeRadius,
++                                          final int regionSectionChunkShift,
++                                          final String name, final Supplier<RegionData> regionDataSupplier,
++                                          final Supplier<RegionSectionData> regionSectionDataSupplier) {
++        this.regionSectionMergeRadius = sectionMergeRadius;
++        this.regionSectionChunkSize = 1 << regionSectionChunkShift;
++        this.regionChunkShift = regionSectionChunkShift;
 +        this.world = world;
-+        this.dataClass = enumClass;
 +        this.name = name;
 +        this.minSectionRecalcCount = Math.max(2, minSectionRecalcCount);
 +        this.maxDeadRegionPercent = maxDeadRegionPercent;
-+
-+        String prefix = world.getWorld().getName() + " - Region Manager - " + name + " - ";
-+        this.addChunkTimings = MinecraftTimings.getInternalTaskName(prefix.concat("add"));
-+        this.removeChunkTimings = MinecraftTimings.getInternalTaskName(prefix.concat("remove"));
-+        this.regionRecalculateTimings = MinecraftTimings.getInternalTaskName(prefix.concat("recalculate"));
++        this.regionDataSupplier = regionDataSupplier;
++        this.regionSectionDataSupplier = regionSectionDataSupplier;
 +    }
 +
 +    // tested via https://gist.github.com/Spottedleaf/aa7ade3451c37b4cac061fc77074db2f
@@ -80,51 +74,51 @@ index 0000000000000000000000000000000000000000..20150ad0750a648d349701a09b31881b
 +    }
 +    */
 +
-+    protected void addToRecalcQueue(final Region<T> region) {
++    protected void addToRecalcQueue(final Region region) {
 +        this.needsRecalculation.add(region);
 +    }
 +
-+    protected void removeFromRecalcQueue(final Region<T> region) {
++    protected void removeFromRecalcQueue(final Region region) {
 +        this.needsRecalculation.remove(region);
 +    }
 +
-+    public RegionSection<T> getRegionSection(final int chunkX, final int chunkZ) {
-+        return this.regionsBySection.get(MCUtil.getCoordinateKey(chunkX >> REGION_CHUNK_SIZE_SHIFT, chunkZ >> REGION_CHUNK_SIZE_SHIFT));
++    public RegionSection getRegionSection(final int chunkX, final int chunkZ) {
++        return this.regionsBySection.get(MCUtil.getCoordinateKey(chunkX >> this.regionChunkShift, chunkZ >> this.regionChunkShift));
 +    }
 +
-+    public Region<T> getRegion(final int chunkX, final int chunkZ) {
-+        final RegionSection<T> section = this.regionsBySection.get(MCUtil.getCoordinateKey(chunkX >> REGION_CHUNK_SIZE_SHIFT, chunkZ >> REGION_CHUNK_SIZE_SHIFT));
++    public Region getRegion(final int chunkX, final int chunkZ) {
++        final RegionSection section = this.regionsBySection.get(MCUtil.getCoordinateKey(chunkX >> regionChunkShift, chunkZ >> regionChunkShift));
 +        return section != null ? section.region : null;
 +    }
 +
-+    private final List<Region<T>> toMerge = new ArrayList<>((2 * REGION_SECTION_MERGE_RADIUS + 1) * (2 * REGION_SECTION_MERGE_RADIUS + 1));
++    private final List<Region> toMerge = new ArrayList<>();
 +
-+    protected RegionSection<T> getOrCreateAndMergeSection(final int sectionX, final int sectionZ, final RegionSection<T> force) {
++    protected RegionSection getOrCreateAndMergeSection(final int sectionX, final int sectionZ, final RegionSection force) {
 +        final long sectionKey = MCUtil.getCoordinateKey(sectionX, sectionZ);
 +
 +        if (force == null) {
-+            RegionSection<T> region = this.regionsBySection.get(sectionKey);
++            RegionSection region = this.regionsBySection.get(sectionKey);
 +            if (region != null) {
 +                return region;
 +            }
 +        }
 +
 +        int mergeCandidateSectionSize = -1;
-+        Region<T> mergeIntoCandidate = null;
++        Region mergeIntoCandidate = null;
 +
 +        // find optimal candidate to merge into
 +
-+        final int minX = sectionX - REGION_SECTION_MERGE_RADIUS;
-+        final int maxX = sectionX + REGION_SECTION_MERGE_RADIUS;
-+        final int minZ = sectionZ - REGION_SECTION_MERGE_RADIUS;
-+        final int maxZ = sectionZ + REGION_SECTION_MERGE_RADIUS;
++        final int minX = sectionX - this.regionSectionMergeRadius;
++        final int maxX = sectionX + this.regionSectionMergeRadius;
++        final int minZ = sectionZ - this.regionSectionMergeRadius;
++        final int maxZ = sectionZ + this.regionSectionMergeRadius;
 +        for (int currX = minX; currX <= maxX; ++currX) {
 +            for (int currZ = minZ; currZ <= maxZ; ++currZ) {
-+                final RegionSection<T> section = this.regionsBySection.get(MCUtil.getCoordinateKey(currX, currZ));
++                final RegionSection section = this.regionsBySection.get(MCUtil.getCoordinateKey(currX, currZ));
 +                if (section == null) {
 +                    continue;
 +                }
-+                final Region<T> region = section.region;
++                final Region region = section.region;
 +                if (region.dead) {
 +                    throw new IllegalStateException("Dead region should not be in live region manager state: " + region);
 +                }
@@ -141,7 +135,7 @@ index 0000000000000000000000000000000000000000..20150ad0750a648d349701a09b31881b
 +        // merge
 +        if (mergeIntoCandidate != null) {
 +            for (int i = 0; i < this.toMerge.size(); ++i) {
-+                final Region<T> region = this.toMerge.get(i);
++                final Region region = this.toMerge.get(i);
 +                if (region.dead || mergeIntoCandidate == region) {
 +                    continue;
 +                }
@@ -149,14 +143,14 @@ index 0000000000000000000000000000000000000000..20150ad0750a648d349701a09b31881b
 +            }
 +            this.toMerge.clear();
 +        } else {
-+            mergeIntoCandidate = new Region<>(this);
++            mergeIntoCandidate = new Region(this);
 +        }
 +
-+        final RegionSection<T> section;
++        final RegionSection section;
 +        if (force == null) {
-+            this.regionsBySection.put(sectionKey, section = new RegionSection<>(sectionKey, this));
++            this.regionsBySection.put(sectionKey, section = new RegionSection(sectionKey, this));
 +        } else {
-+            final RegionSection<T> existing = this.regionsBySection.putIfAbsent(sectionKey, force);
++            final RegionSection existing = this.regionsBySection.putIfAbsent(sectionKey, force);
 +            if (existing != null) {
 +                throw new IllegalStateException("Attempting to override section '" + existing.toStringWithRegion() +
 +                        ", with " + force.toStringWithRegion());
@@ -165,8 +159,7 @@ index 0000000000000000000000000000000000000000..20150ad0750a648d349701a09b31881b
 +            section = force;
 +        }
 +
-+        section.region = mergeIntoCandidate;
-+        mergeIntoCandidate.sections.add(section);
++        mergeIntoCandidate.addRegionSection(section);
 +        //mergeIntoCandidate.check();
 +        //this.check();
 +
@@ -174,110 +167,97 @@ index 0000000000000000000000000000000000000000..20150ad0750a648d349701a09b31881b
 +    }
 +
 +    public void addChunk(final int chunkX, final int chunkZ) {
-+        this.addChunkTimings.startTiming();
-+        try {
-+            this.getOrCreateAndMergeSection(chunkX >> REGION_CHUNK_SIZE_SHIFT, chunkZ >> REGION_CHUNK_SIZE_SHIFT, null).addChunk(chunkX, chunkZ);
-+        } finally {
-+            this.addChunkTimings.stopTiming();
-+        }
++        this.getOrCreateAndMergeSection(chunkX >> this.regionChunkShift, chunkZ >> this.regionChunkShift, null).addChunk(chunkX, chunkZ);
 +    }
 +
 +    public void removeChunk(final int chunkX, final int chunkZ) {
-+        this.removeChunkTimings.startTiming();
-+        try {
-+            final RegionSection<T> section = this.regionsBySection.get(
-+                    MCUtil.getCoordinateKey(chunkX >> REGION_CHUNK_SIZE_SHIFT, chunkZ >> REGION_CHUNK_SIZE_SHIFT)
-+            );
-+            if (section != null) {
-+                section.removeChunk(chunkX, chunkZ);
-+            } else {
-+                throw new IllegalStateException("Cannot remove chunk at (" + chunkX + "," + chunkZ + ") from region state, section does not exist");
-+            }
-+        } finally {
-+            this.removeChunkTimings.stopTiming();
++        final RegionSection section = this.regionsBySection.get(
++                MCUtil.getCoordinateKey(chunkX >> this.regionChunkShift, chunkZ >> this.regionChunkShift)
++        );
++        if (section != null) {
++            section.removeChunk(chunkX, chunkZ);
++        } else {
++            throw new IllegalStateException("Cannot remove chunk at (" + chunkX + "," + chunkZ + ") from region state, section does not exist");
 +        }
 +    }
 +
 +    public void recalculateRegions() {
 +        for (int i = 0, len = this.needsRecalculation.size(); i < len; ++i) {
-+            final Region<T> region = this.needsRecalculation.removeFirst();
++            final Region region = this.needsRecalculation.removeFirst();
 +
 +            this.recalculateRegion(region);
 +            //this.check();
 +        }
 +    }
 +
-+    protected void recalculateRegion(final Region<T> region) {
-+        this.regionRecalculateTimings.startTiming();
-+        try {
-+            region.markedForRecalc = false;
++    protected void recalculateRegion(final Region region) {
++        region.markedForRecalc = false;
++        //region.check();
++        // clear unused regions
++        for (final Iterator<RegionSection> iterator = region.deadSections.iterator(); iterator.hasNext();) {
++            final RegionSection deadSection = iterator.next();
++
++            if (deadSection.hasChunks()) {
++                throw new IllegalStateException("Dead section '" + deadSection.toStringWithRegion() + "' is marked dead but has chunks!");
++            }
++            if (!region.removeRegionSection(deadSection)) {
++                throw new IllegalStateException("Region " + region + " has inconsistent state, it should contain section " + deadSection);
++            }
++            if (!this.regionsBySection.remove(deadSection.regionCoordinate, deadSection)) {
++                throw new IllegalStateException("Cannot remove dead section '" +
++                        deadSection.toStringWithRegion() + "' from section state! State at section coordinate: " +
++                        this.regionsBySection.get(deadSection.regionCoordinate));
++            }
++        }
++        region.deadSections.clear();
++
++        // implicitly cover cases where size == 0
++        if (region.sections.size() < this.minSectionRecalcCount) {
 +            //region.check();
-+            // clear unused regions
-+            for (final Iterator<RegionSection<T>> iterator = region.deadSections.iterator(); iterator.hasNext();) {
-+                final RegionSection<T> deadSection = iterator.next();
++            return;
++        }
 +
-+                if (deadSection.hasChunks()) {
-+                    throw new IllegalStateException("Dead section '" + deadSection.toStringWithRegion() + "' is marked dead but has chunks!");
-+                }
-+                if (!region.sections.remove(deadSection)) {
-+                    throw new IllegalStateException("Region " + region + " has inconsistent state, it should contain section " + deadSection);
-+                }
-+                if (!this.regionsBySection.remove(deadSection.regionCoordinate, deadSection)) {
-+                    throw new IllegalStateException("Cannot remove dead section '" +
-+                            deadSection.toStringWithRegion() + "' from section state! State at section coordinate: " +
-+                            this.regionsBySection.get(deadSection.regionCoordinate));
-+                }
++        // run a test to see if we actually need to recalculate
++        // TODO
++
++        // destroy and rebuild the region
++        region.dead = true;
++
++        // destroy region state
++        for (final Iterator<RegionSection> iterator = region.sections.unsafeIterator(IteratorSafeOrderedReferenceSet.ITERATOR_FLAG_SEE_ADDITIONS); iterator.hasNext();) {
++            final RegionSection aliveSection = iterator.next();
++            if (!aliveSection.hasChunks()) {
++                throw new IllegalStateException("Alive section '" + aliveSection.toStringWithRegion() + "' has no chunks!");
 +            }
-+            region.deadSections.clear();
-+
-+            // implicitly cover cases where size == 0
-+            if (region.sections.size() < this.minSectionRecalcCount) {
-+                //region.check();
-+                return;
++            if (!this.regionsBySection.remove(aliveSection.regionCoordinate, aliveSection)) {
++                throw new IllegalStateException("Cannot remove alive section '" +
++                        aliveSection.toStringWithRegion() + "' from section state! State at section coordinate: " +
++                        this.regionsBySection.get(aliveSection.regionCoordinate));
 +            }
++        }
 +
-+            // run a test to see if we actually need to recalculate
-+            // TODO
-+
-+            // destroy and rebuild the region
-+            region.dead = true;
-+
-+            // destroy region state
-+            for (final Iterator<RegionSection<T>> iterator = region.sections.unsafeIterator(IteratorSafeOrderedReferenceSet.ITERATOR_FLAG_SEE_ADDITIONS); iterator.hasNext();) {
-+                final RegionSection<T> aliveSection = iterator.next();
-+                if (!aliveSection.hasChunks()) {
-+                    throw new IllegalStateException("Alive section '" + aliveSection.toStringWithRegion() + "' has no chunks!");
-+                }
-+                if (!this.regionsBySection.remove(aliveSection.regionCoordinate, aliveSection)) {
-+                    throw new IllegalStateException("Cannot remove alive section '" +
-+                            aliveSection.toStringWithRegion() + "' from section state! State at section coordinate: " +
-+                            this.regionsBySection.get(aliveSection.regionCoordinate));
-+                }
-+            }
-+
-+            // rebuild regions
-+            for (final Iterator<RegionSection<T>> iterator = region.sections.unsafeIterator(IteratorSafeOrderedReferenceSet.ITERATOR_FLAG_SEE_ADDITIONS); iterator.hasNext();) {
-+                final RegionSection<T> aliveSection = iterator.next();
-+                this.getOrCreateAndMergeSection(aliveSection.getSectionX(), aliveSection.getSectionZ(), aliveSection);
-+            }
-+        } finally {
-+            this.regionRecalculateTimings.stopTiming();
++        // rebuild regions
++        for (final Iterator<RegionSection> iterator = region.sections.unsafeIterator(IteratorSafeOrderedReferenceSet.ITERATOR_FLAG_SEE_ADDITIONS); iterator.hasNext();) {
++            final RegionSection aliveSection = iterator.next();
++            this.getOrCreateAndMergeSection(aliveSection.getSectionX(), aliveSection.getSectionZ(), aliveSection);
 +        }
 +    }
 +
-+    public static final class Region<T extends Enum<T> & SingleThreadChunkRegionManager.RegionDataCreator<T>> {
-+        protected final IteratorSafeOrderedReferenceSet<RegionSection<T>> sections = new IteratorSafeOrderedReferenceSet<>(true);
-+        protected final ReferenceOpenHashSet<RegionSection<T>> deadSections = new ReferenceOpenHashSet<>(16, 0.7f);
++    public static final class Region {
++        protected final IteratorSafeOrderedReferenceSet<RegionSection> sections = new IteratorSafeOrderedReferenceSet<>();
++        protected final ReferenceOpenHashSet<RegionSection> deadSections = new ReferenceOpenHashSet<>(16, 0.7f);
 +        protected boolean dead;
 +        protected boolean markedForRecalc;
 +
-+        public final SingleThreadChunkRegionManager<T> regionManager;
++        public final SingleThreadChunkRegionManager regionManager;
++        public final RegionData regionData;
 +
-+        protected Region(final SingleThreadChunkRegionManager<T> regionManager) {
++        protected Region(final SingleThreadChunkRegionManager regionManager) {
 +            this.regionManager = regionManager;
++            this.regionData = regionManager.regionDataSupplier.get();
 +        }
 +
-+        public IteratorSafeOrderedReferenceSet.Iterator<RegionSection<T>> getSections() {
++        public IteratorSafeOrderedReferenceSet.Iterator<RegionSection> getSections() {
 +            return this.sections.iterator(IteratorSafeOrderedReferenceSet.ITERATOR_FLAG_SEE_ADDITIONS);
 +        }
 +
@@ -302,7 +282,30 @@ index 0000000000000000000000000000000000000000..20150ad0750a648d349701a09b31881b
 +        }
 +        */
 +
-+        protected void mergeInto(final Region<T> mergeTarget) {
++        // note: it is not true that the region at this point is not in any region. use the region field on the section
++        // to see if it is currently in another region.
++        protected final boolean addRegionSection(final RegionSection section) {
++            if (!this.sections.add(section)) {
++                return false;
++            }
++
++            section.sectionData.addToRegion(section, section.region, this);
++
++            section.region = this;
++            return true;
++        }
++
++        protected final boolean removeRegionSection(final RegionSection section) {
++            if (!this.sections.remove(section)) {
++                return false;
++            }
++
++            section.sectionData.removeFromRegion(section, this);
++
++            return true;
++        }
++
++        protected void mergeInto(final Region mergeTarget) {
 +            if (this == mergeTarget) {
 +                throw new IllegalStateException("Cannot merge a region onto itself");
 +            }
@@ -316,17 +319,15 @@ index 0000000000000000000000000000000000000000..20150ad0750a648d349701a09b31881b
 +                this.regionManager.removeFromRecalcQueue(this);
 +            }
 +
-+            for (final Iterator<RegionSection<T>> iterator = this.sections.unsafeIterator(IteratorSafeOrderedReferenceSet.ITERATOR_FLAG_SEE_ADDITIONS); iterator.hasNext();) {
-+                final RegionSection<T> section = iterator.next();
++            for (final Iterator<RegionSection> iterator = this.sections.unsafeIterator(IteratorSafeOrderedReferenceSet.ITERATOR_FLAG_SEE_ADDITIONS); iterator.hasNext();) {
++                final RegionSection section = iterator.next();
 +
-+                if (!mergeTarget.sections.add(section)) {
++                if (!mergeTarget.addRegionSection(section)) {
 +                    throw new IllegalStateException("Target cannot contain source's sections! Source " + this + ", target " + mergeTarget);
 +                }
-+
-+                section.region = mergeTarget;
 +            }
 +
-+            for (final RegionSection<T> deadSection : this.deadSections) {
++            for (final RegionSection deadSection : this.deadSections) {
 +                if (!this.sections.contains(deadSection)) {
 +                    throw new IllegalStateException("Source region does not even contain its own dead sections! Missing " + deadSection + " from region " + this);
 +                }
@@ -335,7 +336,7 @@ index 0000000000000000000000000000000000000000..20150ad0750a648d349701a09b31881b
 +            //mergeTarget.check();
 +        }
 +
-+        protected void markSectionAlive(final RegionSection<T> section) {
++        protected void markSectionAlive(final RegionSection section) {
 +            this.deadSections.remove(section);
 +            if (this.markedForRecalc && (this.sections.size() < this.regionManager.minSectionRecalcCount || this.getDeadSectionPercent() < this.regionManager.maxDeadRegionPercent)) {
 +                this.regionManager.removeFromRecalcQueue(this);
@@ -343,7 +344,7 @@ index 0000000000000000000000000000000000000000..20150ad0750a648d349701a09b31881b
 +            }
 +        }
 +
-+        protected void markSectionDead(final RegionSection<T> section) {
++        protected void markSectionDead(final RegionSection section) {
 +            this.deadSections.add(section);
 +            if (!this.markedForRecalc && (this.sections.size() >= this.regionManager.minSectionRecalcCount || this.sections.size() == this.deadSections.size()) && this.getDeadSectionPercent() >= this.regionManager.maxDeadRegionPercent) {
 +                this.regionManager.addToRecalcQueue(this);
@@ -361,8 +362,8 @@ index 0000000000000000000000000000000000000000..20150ad0750a648d349701a09b31881b
 +
 +            ret.append("sectionCount=").append(this.sections.size()).append(',');
 +            ret.append("sections=[");
-+            for (final Iterator<RegionSection<T>> iterator = this.sections.unsafeIterator(IteratorSafeOrderedReferenceSet.ITERATOR_FLAG_SEE_ADDITIONS); iterator.hasNext();) {
-+                final RegionSection<T> section = iterator.next();
++            for (final Iterator<RegionSection> iterator = this.sections.unsafeIterator(IteratorSafeOrderedReferenceSet.ITERATOR_FLAG_SEE_ADDITIONS); iterator.hasNext();) {
++                final RegionSection section = iterator.next();
 +                ret.append(section);
 +                if (iterator.hasNext()) {
 +                    ret.append(',');
@@ -375,23 +376,20 @@ index 0000000000000000000000000000000000000000..20150ad0750a648d349701a09b31881b
 +        }
 +    }
 +
-+    public static final class RegionSection<T extends Enum<T> & SingleThreadChunkRegionManager.RegionDataCreator<T>> {
++    public static final class RegionSection {
 +        protected final long regionCoordinate;
-+        protected final long[] chunksBitset = new long[Math.max(1, REGION_CHUNK_SIZE * REGION_CHUNK_SIZE / Long.SIZE)];
++        protected final long[] chunksBitset;
 +        protected int chunkCount;
-+        protected Region<T> region;
-+        protected final EnumMap<T, Object> data;
-+        protected final Function<? super T, Object> createIfAbsentFunction;
++        protected Region region;
 +
-+        public final SingleThreadChunkRegionManager<T> regionManager;
++        public final SingleThreadChunkRegionManager regionManager;
++        public final RegionSectionData sectionData;
 +
-+        protected RegionSection(final long regionCoordinate, final SingleThreadChunkRegionManager<T> regionManager) {
++        protected RegionSection(final long regionCoordinate, final SingleThreadChunkRegionManager regionManager) {
 +            this.regionCoordinate = regionCoordinate;
-+            this.data = new EnumMap<>(regionManager.dataClass);
 +            this.regionManager = regionManager;
-+            this.createIfAbsentFunction = (final T keyInMap) -> {
-+                return keyInMap.createData(RegionSection.this, regionManager);
-+            };
++            this.chunksBitset = new long[Math.max(1, regionManager.regionSectionChunkSize * regionManager.regionSectionChunkSize / Long.SIZE)];
++            this.sectionData = regionManager.regionSectionDataSupplier.get();
 +        }
 +
 +        public int getSectionX() {
@@ -402,28 +400,12 @@ index 0000000000000000000000000000000000000000..20150ad0750a648d349701a09b31881b
 +            return MCUtil.getCoordinateZ(this.regionCoordinate);
 +        }
 +
-+        public Region<T> getRegion() {
++        public Region getRegion() {
 +            return this.region;
 +        }
 +
-+        public Object getData(final T key) {
-+            return this.data.get(key);
-+        }
-+
-+        public Object getOrCreateData(final T key) {
-+            return this.data.computeIfAbsent(key, this.createIfAbsentFunction);
-+        }
-+
-+        public Object removeData(final T key) {
-+            return this.data.remove(key);
-+        }
-+
-+        public void setData(final T key, final Object data) {
-+            this.data.put(key, data);
-+        }
-+
-+        private static int getChunkIndex(final int chunkX, final int chunkZ) {
-+            return (chunkX & (REGION_CHUNK_SIZE - 1)) | ((chunkZ & (REGION_CHUNK_SIZE - 1)) << REGION_CHUNK_SIZE_SHIFT);
++        private int getChunkIndex(final int chunkX, final int chunkZ) {
++            return (chunkX & (this.regionManager.regionSectionChunkSize - 1)) | ((chunkZ & (this.regionManager.regionSectionChunkSize - 1)) << this.regionManager.regionChunkShift);
 +        }
 +
 +        protected boolean hasChunks() {
@@ -431,7 +413,7 @@ index 0000000000000000000000000000000000000000..20150ad0750a648d349701a09b31881b
 +        }
 +
 +        protected void addChunk(final int chunkX, final int chunkZ) {
-+            final int index = getChunkIndex(chunkX, chunkZ);
++            final int index = this.getChunkIndex(chunkX, chunkZ);
 +            final long bitset = this.chunksBitset[index >>> 6]; // index / Long.SIZE
 +            final long after = this.chunksBitset[index >>> 6] = bitset | (1L << (index & (Long.SIZE - 1)));
 +            if (after == bitset) {
@@ -444,7 +426,7 @@ index 0000000000000000000000000000000000000000..20150ad0750a648d349701a09b31881b
 +        }
 +
 +        protected void removeChunk(final int chunkX, final int chunkZ) {
-+            final int index = getChunkIndex(chunkX, chunkZ);
++            final int index = this.getChunkIndex(chunkX, chunkZ);
 +            final long before = this.chunksBitset[index >>> 6]; // index / Long.SIZE
 +            final long bitset = this.chunksBitset[index >>> 6] = before & ~(1L << (index & (Long.SIZE - 1)));
 +            if (before == bitset) {
@@ -477,12 +459,12 @@ index 0000000000000000000000000000000000000000..20150ad0750a648d349701a09b31881b
 +        }
 +
 +        private static String toString(final long[] array) {
-+            StringBuilder ret = new StringBuilder();
-+            for (long value : array) {
++            final StringBuilder ret = new StringBuilder();
++            for (final long value : array) {
 +                // zero pad the hex string
-+                char[] zeros = new char[Long.SIZE / 4];
++                final char[] zeros = new char[Long.SIZE / 4];
 +                Arrays.fill(zeros, '0');
-+                String string = Long.toHexString(value);
++                final String string = Long.toHexString(value);
 +                System.arraycopy(string.toCharArray(), 0, zeros, zeros.length - string.length(), string.length());
 +
 +                ret.append(zeros);
@@ -492,10 +474,17 @@ index 0000000000000000000000000000000000000000..20150ad0750a648d349701a09b31881b
 +        }
 +    }
 +
-+    public static interface RegionDataCreator<E extends Enum<E> & RegionDataCreator<E>> {
++    public static interface RegionData {
 +
-+        Object createData(final RegionSection<E> section,
-+                          final SingleThreadChunkRegionManager<E> regionManager);
++    }
++
++    public static interface RegionSectionData {
++
++        public void removeFromRegion(final RegionSection section, final Region from);
++
++        // removal from the old region is handled via removeFromRegion
++        public void addToRegion(final RegionSection section, final Region oldRegion, final Region newRegion);
++
 +    }
 +}
 \ No newline at end of file
@@ -1966,76 +1955,111 @@ index 0000000000000000000000000000000000000000..606417a8aeaca2682595f417bba8e9d4
 +        }
 +    }
 +}
-diff --git a/src/main/java/net/minecraft/server/BlockBase.java b/src/main/java/net/minecraft/server/BlockBase.java
-index 1f334d63282bd5c23dc3b275a220f09e60c34537..85f60b56b5689b77ba3d9e99e29b4f734df5d91e 100644
---- a/src/main/java/net/minecraft/server/BlockBase.java
-+++ b/src/main/java/net/minecraft/server/BlockBase.java
-@@ -295,14 +295,14 @@ public abstract class BlockBase {
+diff --git a/src/main/java/net/minecraft/server/MCUtil.java b/src/main/java/net/minecraft/server/MCUtil.java
+index 1d72af9cace7aa8f1d20c7c1c5be621f533e2dad..006e7076932f6be576a64da09c4d84ca4a15f5dd 100644
+--- a/src/main/java/net/minecraft/server/MCUtil.java
++++ b/src/main/java/net/minecraft/server/MCUtil.java
+@@ -238,6 +238,63 @@ public final class MCUtil {
+         return getBlockKey(getBlockCoordinate(entity.locX()), getBlockCoordinate(entity.locY()), getBlockCoordinate(entity.locZ()));
+     }
  
-     public abstract static class BlockData extends IBlockDataHolder<Block, IBlockData> {
- 
--        private final int b;
--        private final boolean e;
-+        private final int b; public final int getEmittedLight() { return this.b; } // Tuinity - OBFHELPER
-+        private final boolean e; public final boolean isTransparentOnSomeFaces() { return this.e; } // Tuinity - OBFHELPER
-         private final boolean f;
-         private final Material g;
-         private final MaterialMapColor h;
-         public final float strength;
-         private final boolean j;
--        private final boolean k;
-+        private final boolean k; public final boolean isOpaque() { return this.k; } // Tuinity - OBFHELPER
-         private final BlockBase.e l;
-         private final BlockBase.e m;
-         private final BlockBase.e n;
-@@ -343,12 +343,20 @@ public abstract class BlockBase {
-         protected Fluid fluid;
-         // Paper end
- 
-+        // Tuinity start - micro the hell out of this call
-+        protected boolean shapeExceedsCube = true;
-+        public final boolean shapeExceedsCube() {
-+            return this.shapeExceedsCube;
-+        }
-+        // Tuinity end
++    // Tuinity start
 +
-         public void a() {
-             this.fluid = this.getBlock().d(this.p()); // Paper - moved from getFluid()
-             this.isTicking = this.getBlock().isTicking(this.p()); // Paper - moved from isTicking()
-             if (!this.getBlock().o()) {
-                 this.a = new BlockBase.BlockData.Cache(this.p());
-             }
-+            this.shapeExceedsCube = this.a == null || this.a.c; // Tuinity - moved from actual method to here
++    static final int SECTION_X_BITS = 22;
++    static final long SECTION_X_MASK = (1L << SECTION_X_BITS) - 1;
++    static final int SECTION_Y_BITS = 20;
++    static final long SECTION_Y_MASK = (1L << SECTION_Y_BITS) - 1;
++    static final int SECTION_Z_BITS = 22;
++    static final long SECTION_Z_MASK = (1L << SECTION_Z_BITS) - 1;
++    // format is y,z,x (in order of LSB to MSB)
++    static final int SECTION_Y_SHIFT = 0;
++    static final int SECTION_Z_SHIFT = SECTION_Y_SHIFT + SECTION_Y_BITS;
++    static final int SECTION_X_SHIFT = SECTION_Z_SHIFT + SECTION_X_BITS;
++    static final int SECTION_TO_BLOCK_SHIFT = 4;
++
++    public static long getSectionKey(final int x, final int y, final int z) {
++        return ((x & SECTION_X_MASK) << SECTION_X_SHIFT)
++                | ((y & SECTION_Y_MASK) << SECTION_Y_SHIFT)
++                | ((z & SECTION_Z_MASK) << SECTION_Z_SHIFT);
++    }
++
++    public static long getSectionKey(final net.minecraft.core.SectionPosition pos) {
++        return ((pos.getX() & SECTION_X_MASK) << SECTION_X_SHIFT)
++                | ((pos.getY() & SECTION_Y_MASK) << SECTION_Y_SHIFT)
++                | ((pos.getZ() & SECTION_Z_MASK) << SECTION_Z_SHIFT);
++    }
++
++    public static long getSectionKey(final ChunkCoordIntPair pos, final int y) {
++        return ((pos.x & SECTION_X_MASK) << SECTION_X_SHIFT)
++                | ((y & SECTION_Y_MASK) << SECTION_Y_SHIFT)
++                | ((pos.z & SECTION_Z_MASK) << SECTION_Z_SHIFT);
++    }
++
++    public static long getSectionKey(final BlockPosition pos) {
++        return (((long)pos.getX() << (SECTION_X_SHIFT - SECTION_TO_BLOCK_SHIFT)) & (SECTION_X_MASK << SECTION_X_SHIFT)) |
++                ((pos.getY() >> SECTION_TO_BLOCK_SHIFT) & (SECTION_Y_MASK << SECTION_Y_SHIFT)) |
++                (((long)pos.getZ() << (SECTION_Z_SHIFT - SECTION_TO_BLOCK_SHIFT)) & (SECTION_Z_MASK << SECTION_Z_SHIFT));
++    }
++
++    public static long getSectionKey(final Entity entity) {
++        return ((MCUtil.fastFloor(entity.locX()) & SECTION_X_MASK) << SECTION_X_SHIFT)
++                | ((MCUtil.fastFloor(entity.locY()) & SECTION_Y_MASK) << SECTION_Y_SHIFT)
++                | ((MCUtil.fastFloor(entity.locZ()) & SECTION_Z_MASK) << SECTION_Z_SHIFT);
++    }
++
++    public static int getSectionX(final long key) {
++        return (int)(key << (Long.SIZE - (SECTION_X_SHIFT + SECTION_X_BITS)) >> (Long.SIZE - SECTION_X_BITS));
++    }
++
++    public static int getSectionY(final long key) {
++        return (int)(key << (Long.SIZE - (SECTION_Y_SHIFT + SECTION_Y_BITS)) >> (Long.SIZE - SECTION_Y_BITS));
++    }
++
++    public static int getSectionZ(final long key) {
++        return (int)(key << (Long.SIZE - (SECTION_Z_SHIFT + SECTION_Z_BITS)) >> (Long.SIZE - SECTION_Z_BITS));
++    }
++    // Tuinity end
++
+     // assumes the sets have the same comparator, and if this comparator is null then assume T is Comparable
+     public static <T> void mergeSortedSets(final java.util.function.Consumer<T> consumer, final java.util.Comparator<? super T> comparator, final java.util.SortedSet<T>...sets) {
+         final ObjectRBTreeSet<T> all = new ObjectRBTreeSet<>(comparator);
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 2d567bda66f010d2e2eac9fe343196901ad16a1c..6a7fed72bdf9c576170591359e78f943e1523e43 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -267,6 +267,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+     public org.bukkit.command.RemoteConsoleCommandSender remoteConsole;
+     //public ConsoleReader reader; // Paper
+     public static int currentTick = 0; // Paper - Further improve tick loop
++    public static long currentTickLong = 0L; // Tuinity
+     public java.util.Queue<Runnable> processQueue = new java.util.concurrent.ConcurrentLinkedQueue<Runnable>();
+     public int autosavePeriod;
+     public boolean serverAutoSave = false; // Paper
+@@ -1088,6 +1089,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+                         this.lastOverloadTime = this.nextTick;
+                     }
  
-         }
- 
-@@ -372,10 +380,12 @@ public abstract class BlockBase {
-             return this.a != null ? this.a.g : this.getBlock().b(this.p(), iblockaccess, blockposition);
-         }
- 
-+        public final int getOpacity(IBlockAccess iblockaccess, BlockPosition blockposition) { return this.b(iblockaccess, blockposition); } // Tuinity - OBFHELPER
-         public int b(IBlockAccess iblockaccess, BlockPosition blockposition) {
-             return this.a != null ? this.a.h : this.getBlock().f(this.p(), iblockaccess, blockposition);
-         }
- 
-+        public final VoxelShape getCullingFace(IBlockAccess iblockaccess, BlockPosition blockposition, EnumDirection enumdirection) { return this.a(iblockaccess, blockposition, enumdirection); } // Tuinity - OBFHELPER
-         public VoxelShape a(IBlockAccess iblockaccess, BlockPosition blockposition, EnumDirection enumdirection) {
-             return this.a != null && this.a.i != null ? this.a.i[enumdirection.ordinal()] : VoxelShapes.a(this.c(iblockaccess, blockposition), enumdirection);
-         }
-@@ -385,7 +395,7 @@ public abstract class BlockBase {
-         }
- 
-         public final boolean d() { // Paper
--            return this.a == null || this.a.c;
-+            return this.shapeExceedsCube; // Tuinity - moved into shape cache init
-         }
- 
-         public final boolean e() { // Paper
-diff --git a/src/main/java/net/minecraft/server/ChunkProviderServer.java b/src/main/java/net/minecraft/server/ChunkProviderServer.java
-index 0ea1b25bf98d71c251351807fa92d4d08eb6b06e..c8c0748628e83b6396c13afe896acc16c85109b0 100644
---- a/src/main/java/net/minecraft/server/ChunkProviderServer.java
-+++ b/src/main/java/net/minecraft/server/ChunkProviderServer.java
-@@ -112,7 +112,7 @@ public class ChunkProviderServer extends IChunkProvider {
++                    ++MinecraftServer.currentTickLong; // Tuinity
+                     if ( ++MinecraftServer.currentTick % SAMPLE_INTERVAL == 0 )
+                     {
+                         final long diff = curTime - tickSection;
+@@ -1474,6 +1476,11 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+                 midTickLoadChunks(); // Paper
+                 worldserver.timings.doTick.startTiming(); // Spigot
+                 worldserver.doTick(booleansupplier);
++                // Tuinity start
++                for (final com.tuinity.tuinity.chunk.SingleThreadChunkRegionManager regionManager : worldserver.getChunkProvider().playerChunkMap.regionManagers) {
++                    regionManager.recalculateRegions();
++                }
++                // Tuinity end
+                 worldserver.timings.doTick.stopTiming(); // Spigot
+                 midTickLoadChunks(); // Paper
+             } catch (Throwable throwable) {
+diff --git a/src/main/java/net/minecraft/server/level/ChunkProviderServer.java b/src/main/java/net/minecraft/server/level/ChunkProviderServer.java
+index e542fe5fb63064e67c7fde8fad614826d6f3344c..a755ef31627ad398c152c2bd3340855da4fa3a93 100644
+--- a/src/main/java/net/minecraft/server/level/ChunkProviderServer.java
++++ b/src/main/java/net/minecraft/server/level/ChunkProviderServer.java
+@@ -137,7 +137,7 @@ public class ChunkProviderServer extends IChunkProvider {
          return (Chunk)this.getChunkAt(x, z, ChunkStatus.FULL, true);
      }
  
@@ -2044,7 +2068,7 @@ index 0ea1b25bf98d71c251351807fa92d4d08eb6b06e..c8c0748628e83b6396c13afe896acc16
  
      public void getEntityTickingChunkAsync(int x, int z, java.util.function.Consumer<Chunk> onLoad) {
          if (Thread.currentThread() != this.serverThread) {
-@@ -201,6 +201,165 @@ public class ChunkProviderServer extends IChunkProvider {
+@@ -226,6 +226,165 @@ public class ChunkProviderServer extends IChunkProvider {
      }
      // Paper end - rewrite ticklistserver
  
@@ -2210,7 +2234,7 @@ index 0ea1b25bf98d71c251351807fa92d4d08eb6b06e..c8c0748628e83b6396c13afe896acc16
      public ChunkProviderServer(WorldServer worldserver, Convertable.ConversionSession convertable_conversionsession, DataFixer datafixer, DefinedStructureManager definedstructuremanager, Executor executor, ChunkGenerator chunkgenerator, int i, boolean flag, WorldLoadListener worldloadlistener, Supplier<WorldPersistentData> supplier) {
          this.world = worldserver;
          this.serverThreadQueue = new ChunkProviderServer.a(worldserver);
-@@ -599,8 +758,8 @@ public class ChunkProviderServer extends IChunkProvider {
+@@ -624,8 +783,8 @@ public class ChunkProviderServer extends IChunkProvider {
          return !this.a(playerchunk, k);
      }
  
@@ -2221,138 +2245,11 @@ index 0ea1b25bf98d71c251351807fa92d4d08eb6b06e..c8c0748628e83b6396c13afe896acc16
          long k = ChunkCoordIntPair.pair(i, j);
          PlayerChunk playerchunk = this.getChunk(k);
  
-diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index d8787985ab4c94e9808332c15b3d16d4b52ba195..0b25e0a4d050e77fa2fabd4e389d4ce693431aca 100644
---- a/src/main/java/net/minecraft/server/Entity.java
-+++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -207,6 +207,14 @@ public abstract class Entity implements INamableTileEntity, ICommandListener, Ke
-     }
-     // CraftBukkit end
- 
-+    // Tuinity start
-+    public final AxisAlignedBB getBoundingBoxAt(double x, double y, double z) {
-+        double widthHalf = (double)this.size.width / 2.0;
-+        double height = (double)this.size.height;
-+        return new AxisAlignedBB(x - widthHalf, y, z - widthHalf, x + widthHalf, y + height, z + widthHalf);
-+    }
-+    // Tuinity end
-+
-     // Paper start - optimise entity tracking
-     final org.spigotmc.TrackingRange.TrackingRangeType trackingRangeType = org.spigotmc.TrackingRange.getTrackingRangeType(this);
- 
-diff --git a/src/main/java/net/minecraft/server/HeightMap.java b/src/main/java/net/minecraft/server/HeightMap.java
-index 14ddb2a8949ce18a0c42e17a82d0d7a13ac325fe..476da43b9f0ef35b4985f88e4784b1f8c5222af3 100644
---- a/src/main/java/net/minecraft/server/HeightMap.java
-+++ b/src/main/java/net/minecraft/server/HeightMap.java
-@@ -101,6 +101,7 @@ public class HeightMap {
-         }
-     }
- 
-+    public final int get(int x, int z) { return this.a(x, z); } // Tuinity - OBFHELPER
-     public int a(int i, int j) {
-         return this.a(c(i, j));
-     }
-diff --git a/src/main/java/net/minecraft/server/MCUtil.java b/src/main/java/net/minecraft/server/MCUtil.java
-index ff74be14512a947e81b62d53e616131ca7d7f609..2371557d083446b17ffebdae576b1cc39e939eb1 100644
---- a/src/main/java/net/minecraft/server/MCUtil.java
-+++ b/src/main/java/net/minecraft/server/MCUtil.java
-@@ -221,6 +221,63 @@ public final class MCUtil {
-         return getBlockKey(getBlockCoordinate(entity.locX()), getBlockCoordinate(entity.locY()), getBlockCoordinate(entity.locZ()));
-     }
- 
-+    // Tuinity start
-+
-+    static final int SECTION_X_BITS = 22;
-+    static final long SECTION_X_MASK = (1L << SECTION_X_BITS) - 1;
-+    static final int SECTION_Y_BITS = 20;
-+    static final long SECTION_Y_MASK = (1L << SECTION_Y_BITS) - 1;
-+    static final int SECTION_Z_BITS = 22;
-+    static final long SECTION_Z_MASK = (1L << SECTION_Z_BITS) - 1;
-+    // format is y,z,x (in order of LSB to MSB)
-+    static final int SECTION_Y_SHIFT = 0;
-+    static final int SECTION_Z_SHIFT = SECTION_Y_SHIFT + SECTION_Y_BITS;
-+    static final int SECTION_X_SHIFT = SECTION_Z_SHIFT + SECTION_X_BITS;
-+    static final int SECTION_TO_BLOCK_SHIFT = 4;
-+
-+    public static long getSectionKey(final int x, final int y, final int z) {
-+        return ((x & SECTION_X_MASK) << SECTION_X_SHIFT)
-+                | ((y & SECTION_Y_MASK) << SECTION_Y_SHIFT)
-+                | ((z & SECTION_Z_MASK) << SECTION_Z_SHIFT);
-+    }
-+
-+    public static long getSectionKey(final SectionPosition pos) {
-+        return ((pos.getX() & SECTION_X_MASK) << SECTION_X_SHIFT)
-+                | ((pos.getY() & SECTION_Y_MASK) << SECTION_Y_SHIFT)
-+                | ((pos.getZ() & SECTION_Z_MASK) << SECTION_Z_SHIFT);
-+    }
-+
-+    public static long getSectionKey(final ChunkCoordIntPair pos, final int y) {
-+        return ((pos.x & SECTION_X_MASK) << SECTION_X_SHIFT)
-+                | ((y & SECTION_Y_MASK) << SECTION_Y_SHIFT)
-+                | ((pos.z & SECTION_Z_MASK) << SECTION_Z_SHIFT);
-+    }
-+
-+    public static long getSectionKey(final BlockPosition pos) {
-+        return (((long)pos.getX() << (SECTION_X_SHIFT - SECTION_TO_BLOCK_SHIFT)) & (SECTION_X_MASK << SECTION_X_SHIFT)) |
-+                ((pos.getY() >> SECTION_TO_BLOCK_SHIFT) & (SECTION_Y_MASK << SECTION_Y_SHIFT)) |
-+                (((long)pos.getZ() << (SECTION_Z_SHIFT - SECTION_TO_BLOCK_SHIFT)) & (SECTION_Z_MASK << SECTION_Z_SHIFT));
-+    }
-+
-+    public static long getSectionKey(final Entity entity) {
-+        return ((MCUtil.fastFloor(entity.locX()) & SECTION_X_MASK) << SECTION_X_SHIFT)
-+                | ((MCUtil.fastFloor(entity.locY()) & SECTION_Y_MASK) << SECTION_Y_SHIFT)
-+                | ((MCUtil.fastFloor(entity.locZ()) & SECTION_Z_MASK) << SECTION_Z_SHIFT);
-+    }
-+
-+    public static int getSectionX(final long key) {
-+        return (int)(key << (Long.SIZE - (SECTION_X_SHIFT + SECTION_X_BITS)) >> (Long.SIZE - SECTION_X_BITS));
-+    }
-+
-+    public static int getSectionY(final long key) {
-+        return (int)(key << (Long.SIZE - (SECTION_Y_SHIFT + SECTION_Y_BITS)) >> (Long.SIZE - SECTION_Y_BITS));
-+    }
-+
-+    public static int getSectionZ(final long key) {
-+        return (int)(key << (Long.SIZE - (SECTION_Z_SHIFT + SECTION_Z_BITS)) >> (Long.SIZE - SECTION_Z_BITS));
-+    }
-+    // Tuinity end
-+
-     // assumes the sets have the same comparator, and if this comparator is null then assume T is Comparable
-     public static <T> void mergeSortedSets(final java.util.function.Consumer<T> consumer, final java.util.Comparator<? super T> comparator, final java.util.SortedSet<T>...sets) {
-         final ObjectRBTreeSet<T> all = new ObjectRBTreeSet<>(comparator);
-diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 95dd6f2034439699399b0f51ab2b761a5747331d..c9692b3e50c503affaadd217c166029182def6e4 100644
---- a/src/main/java/net/minecraft/server/MinecraftServer.java
-+++ b/src/main/java/net/minecraft/server/MinecraftServer.java
-@@ -152,6 +152,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
-     public org.bukkit.command.RemoteConsoleCommandSender remoteConsole;
-     //public ConsoleReader reader; // Paper
-     public static int currentTick = 0; // Paper - Further improve tick loop
-+    public static long currentTickLong = 0L; // Tuinity
-     public java.util.Queue<Runnable> processQueue = new java.util.concurrent.ConcurrentLinkedQueue<Runnable>();
-     public int autosavePeriod;
-     public boolean serverAutoSave = false; // Paper
-@@ -969,6 +970,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
-                         this.lastOverloadTime = this.nextTick;
-                     }
- 
-+                    ++MinecraftServer.currentTickLong; // Tuinity
-                     if ( ++MinecraftServer.currentTick % SAMPLE_INTERVAL == 0 )
-                     {
-                         final long diff = curTime - tickSection;
-@@ -1355,6 +1357,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
-                 midTickLoadChunks(); // Paper
-                 worldserver.timings.doTick.startTiming(); // Spigot
-                 worldserver.doTick(booleansupplier);
-+                worldserver.getChunkProvider().playerChunkMap.dataRegionManager.recalculateRegions(); // Tuinity
-                 worldserver.timings.doTick.stopTiming(); // Spigot
-                 midTickLoadChunks(); // Paper
-             } catch (Throwable throwable) {
-diff --git a/src/main/java/net/minecraft/server/PlayerChunk.java b/src/main/java/net/minecraft/server/PlayerChunk.java
-index 904c6a7d0a36b57bb4f693fc4fd0dd5b17adcbac..b03865a932d341ae2fdad6c9447979fa9e95fc14 100644
---- a/src/main/java/net/minecraft/server/PlayerChunk.java
-+++ b/src/main/java/net/minecraft/server/PlayerChunk.java
-@@ -508,6 +508,7 @@ public class PlayerChunk {
+diff --git a/src/main/java/net/minecraft/server/level/PlayerChunk.java b/src/main/java/net/minecraft/server/level/PlayerChunk.java
+index a323b76f68c273a73cb3f20167a668b2100f4944..f7deb4fe98ef9900acb276c7680d5a2da9661e8f 100644
+--- a/src/main/java/net/minecraft/server/level/PlayerChunk.java
++++ b/src/main/java/net/minecraft/server/level/PlayerChunk.java
+@@ -534,6 +534,7 @@ public class PlayerChunk {
          // Paper end - per player view distance
      }
  
@@ -2360,7 +2257,7 @@ index 904c6a7d0a36b57bb4f693fc4fd0dd5b17adcbac..b03865a932d341ae2fdad6c9447979fa
      public CompletableFuture<Either<IChunkAccess, PlayerChunk.Failure>> a(ChunkStatus chunkstatus, PlayerChunkMap playerchunkmap) {
          int i = chunkstatus.c();
          CompletableFuture<Either<IChunkAccess, PlayerChunk.Failure>> completablefuture = (CompletableFuture) this.statusFutures.get(i);
-@@ -678,6 +679,9 @@ public class PlayerChunk {
+@@ -704,6 +705,9 @@ public class PlayerChunk {
                      // Paper start - rewrite ticklistserver
                      PlayerChunk.this.chunkMap.world.onChunkSetTicking(PlayerChunk.this.location.x, PlayerChunk.this.location.z);
                      // Paper end - rewrite ticklistserver
@@ -2370,7 +2267,7 @@ index 904c6a7d0a36b57bb4f693fc4fd0dd5b17adcbac..b03865a932d341ae2fdad6c9447979fa
  
                  }
              });
-@@ -688,6 +692,12 @@ public class PlayerChunk {
+@@ -714,6 +718,12 @@ public class PlayerChunk {
          if (flag4 && !flag5) {
              this.tickingFuture.complete(PlayerChunk.UNLOADED_CHUNK); this.isTickingReady = false; // Paper - cache chunk ticking stage
              this.tickingFuture = PlayerChunk.UNLOADED_CHUNK_FUTURE;
@@ -2383,7 +2280,7 @@ index 904c6a7d0a36b57bb4f693fc4fd0dd5b17adcbac..b03865a932d341ae2fdad6c9447979fa
          }
  
          boolean flag6 = playerchunk_state.isAtLeast(PlayerChunk.State.ENTITY_TICKING);
-@@ -705,7 +715,9 @@ public class PlayerChunk {
+@@ -731,7 +741,9 @@ public class PlayerChunk {
                      Chunk entityTickingChunk = either.left().get();
                      PlayerChunk.this.isEntityTickingReady = true;
  
@@ -2394,7 +2291,7 @@ index 904c6a7d0a36b57bb4f693fc4fd0dd5b17adcbac..b03865a932d341ae2fdad6c9447979fa
  
  
                  }
-@@ -717,6 +729,12 @@ public class PlayerChunk {
+@@ -743,6 +755,12 @@ public class PlayerChunk {
          if (flag6 && !flag7) {
              this.entityTickingFuture.complete(PlayerChunk.UNLOADED_CHUNK); this.isEntityTickingReady = false; // Paper - cache chunk ticking stage
              this.entityTickingFuture = PlayerChunk.UNLOADED_CHUNK_FUTURE;
@@ -2407,51 +2304,71 @@ index 904c6a7d0a36b57bb4f693fc4fd0dd5b17adcbac..b03865a932d341ae2fdad6c9447979fa
          }
  
          // Paper start - raise IO/load priority if priority changes, use our preferred priority
-diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-index 49008cdec739b19409fdaf1b0ed806a6c0e93200..fb46fdeb22a7c31c8d132bdc80d657ae82c191be 100644
---- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
-+++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-@@ -277,6 +277,21 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+diff --git a/src/main/java/net/minecraft/server/level/PlayerChunkMap.java b/src/main/java/net/minecraft/server/level/PlayerChunkMap.java
+index 300884804bf9ac3fba7c30a04d8adf52e3dd2e3e..f3d6811156e68040106f1d027a10ea33b5646b05 100644
+--- a/src/main/java/net/minecraft/server/level/PlayerChunkMap.java
++++ b/src/main/java/net/minecraft/server/level/PlayerChunkMap.java
+@@ -332,6 +332,36 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
      }
      // Paper end
  
 +    // Tuinity start
-+    public static enum RegionData implements com.tuinity.tuinity.chunk.SingleThreadChunkRegionManager.RegionDataCreator<RegionData> {
++    public final List<com.tuinity.tuinity.chunk.SingleThreadChunkRegionManager> regionManagers = new java.util.ArrayList<>();
++    public final com.tuinity.tuinity.chunk.SingleThreadChunkRegionManager dataRegionManager;
 +
-+        ;
++    public static final class DataRegionData implements com.tuinity.tuinity.chunk.SingleThreadChunkRegionManager.RegionData {
 +
-+        @Override
-+        public Object createData(com.tuinity.tuinity.chunk.SingleThreadChunkRegionManager.RegionSection<RegionData> section,
-+                                 com.tuinity.tuinity.chunk.SingleThreadChunkRegionManager<RegionData> regionManager) {
-+            throw new AbstractMethodError();
-+        }
++
++
 +    }
 +
-+    public final com.tuinity.tuinity.chunk.SingleThreadChunkRegionManager<RegionData> dataRegionManager;
++    public static final class DataRegionSectionData implements com.tuinity.tuinity.chunk.SingleThreadChunkRegionManager.RegionSectionData {
++
++        @Override
++        public void removeFromRegion(final com.tuinity.tuinity.chunk.SingleThreadChunkRegionManager.RegionSection section,
++                                     final com.tuinity.tuinity.chunk.SingleThreadChunkRegionManager.Region from) {
++            final DataRegionSectionData sectionData = (DataRegionSectionData)section.sectionData;
++            final DataRegionData fromData = (DataRegionData)from.regionData;
++        }
++
++        @Override
++        public void addToRegion(final com.tuinity.tuinity.chunk.SingleThreadChunkRegionManager.RegionSection section,
++                                final com.tuinity.tuinity.chunk.SingleThreadChunkRegionManager.Region oldRegion,
++                                final com.tuinity.tuinity.chunk.SingleThreadChunkRegionManager.Region newRegion) {
++            final DataRegionSectionData sectionData = (DataRegionSectionData)section.sectionData;
++            final DataRegionData oldRegionData = oldRegion == null ? null : (DataRegionData)oldRegion.regionData;
++            final DataRegionData newRegionData = (DataRegionData)newRegion.regionData;
++        }
++    }
 +    // Tuiniy end
 +
      private final java.util.concurrent.ExecutorService lightThread;
      public PlayerChunkMap(WorldServer worldserver, Convertable.ConversionSession convertable_conversionsession, DataFixer datafixer, DefinedStructureManager definedstructuremanager, Executor executor, IAsyncTaskHandler<Runnable> iasynctaskhandler, ILightAccess ilightaccess, ChunkGenerator chunkgenerator, WorldLoadListener worldloadlistener, Supplier<WorldPersistentData> supplier, int i, boolean flag) {
          super(new File(convertable_conversionsession.a(worldserver.getDimensionKey()), "region"), datafixer, flag);
-@@ -444,6 +459,9 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+@@ -499,6 +529,10 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
                  PlayerChunkMap.this.sendChunk(player, new ChunkCoordIntPair(rangeX, rangeZ), null, true, false); // unloaded, loaded
              });
          // Paper end - no-tick view distance
 +        // Tuinity start
-+        this.dataRegionManager = new com.tuinity.tuinity.chunk.SingleThreadChunkRegionManager<>(this.world, RegionData.class, 2, (1.0 / 3.0), "Data");
++        this.dataRegionManager = new com.tuinity.tuinity.chunk.SingleThreadChunkRegionManager(this.world, 2, (1.0 / 3.0), 1, 6, "Data", DataRegionData::new, DataRegionSectionData::new);
++        this.regionManagers.add(this.dataRegionManager);
 +        // Tuinity end
      }
      // Paper start - Chunk Prioritization
      public void queueHolderUpdate(PlayerChunk playerchunk) {
-@@ -778,6 +796,7 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+@@ -833,6 +867,11 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
                      playerchunk.a(j);
                  } else {
                      playerchunk = new PlayerChunk(new ChunkCoordIntPair(i), j, this.lightEngine, this.p, this);
-+                    this.dataRegionManager.addChunk(playerchunk.location.x, playerchunk.location.z); // Tuinity
++                    // Tuinity start
++                    for (int index = 0, len = this.regionManagers.size(); index < len; ++index) {
++                        this.regionManagers.get(index).addChunk(playerchunk.location.x, playerchunk.location.z);
++                    }
++                    // Tuinity end
                  }
  
                  this.updatingChunks.put(i, playerchunk);
-@@ -1020,7 +1039,9 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+@@ -1075,7 +1114,14 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
              if (completablefuture1 != completablefuture) {
                  this.a(i, playerchunk);
              } else {
@@ -2459,18 +2376,30 @@ index 49008cdec739b19409fdaf1b0ed806a6c0e93200..fb46fdeb22a7c31c8d132bdc80d657ae
 +                // Tuinity start
 +                boolean removed;
 +                if ((removed = this.pendingUnload.remove(i, playerchunk)) && ichunkaccess != null) { // Tuinity end
++                    // Tuinity start
++                    for (int index = 0, len = this.regionManagers.size(); index < len; ++index) {
++                        this.regionManagers.get(index).removeChunk(playerchunk.location.x, playerchunk.location.z);
++                    }
++                    // Tuinity end
                      if (ichunkaccess instanceof Chunk) {
                          ((Chunk) ichunkaccess).setLoaded(false);
                      }
-@@ -1044,6 +1065,7 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+@@ -1098,7 +1144,13 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+                     this.lightEngine.a(ichunkaccess.getPos());
                      this.lightEngine.queueUpdate();
                      this.worldLoadListener.a(ichunkaccess.getPos(), (ChunkStatus) null);
-                 }
-+                if (removed) this.dataRegionManager.removeChunk(playerchunk.location.x, playerchunk.location.z); // Tuinity
+-                }
++                } else if (removed) { // Tuinity start
++                    // Tuinity start
++                    for (int index = 0, len = this.regionManagers.size(); index < len; ++index) {
++                        this.regionManagers.get(index).removeChunk(playerchunk.location.x, playerchunk.location.z);
++                    }
++                    // Tuinity end
++                } // Tuinity end
  
              }
          };
-@@ -1710,6 +1732,11 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+@@ -1765,6 +1817,11 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
          return chunkHolder == null ? null : chunkHolder.getAvailableChunkNow();
      }
      // Paper end
@@ -2482,23 +2411,11 @@ index 49008cdec739b19409fdaf1b0ed806a6c0e93200..fb46fdeb22a7c31c8d132bdc80d657ae
  
  
      // Paper start - async io
-diff --git a/src/main/java/net/minecraft/server/VoxelShapes.java b/src/main/java/net/minecraft/server/VoxelShapes.java
-index e21c747b6c39155c44bf30860681d67b0b29fb12..9f4f9df09968dc45878ad59f5ee45672a3f08fbd 100644
---- a/src/main/java/net/minecraft/server/VoxelShapes.java
-+++ b/src/main/java/net/minecraft/server/VoxelShapes.java
-@@ -314,6 +314,7 @@ public final class VoxelShapes {
-         }
-     }
- 
-+    public static boolean combinationOccludes(VoxelShape voxelshape, VoxelShape voxelshape1) { return b(voxelshape, voxelshape1); } // Tuinity - OBFHELPER
-     public static boolean b(VoxelShape voxelshape, VoxelShape voxelshape1) {
-         return voxelshape != b() && voxelshape1 != b() ? (voxelshape.isEmpty() && voxelshape1.isEmpty() ? false : !c(b(), b(voxelshape, voxelshape1, OperatorBoolean.OR), OperatorBoolean.ONLY_FIRST)) : true;
-     }
-diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index cf7d94aabab600822eb5e27f38690b06456d5fcc..4183117fe3977e4f0c927b4262a4804bcb8738f6 100644
---- a/src/main/java/net/minecraft/server/WorldServer.java
-+++ b/src/main/java/net/minecraft/server/WorldServer.java
-@@ -55,6 +55,7 @@ import org.bukkit.event.server.MapInitializeEvent;
+diff --git a/src/main/java/net/minecraft/server/level/WorldServer.java b/src/main/java/net/minecraft/server/level/WorldServer.java
+index 0a698a5a4a6502a488c9afb0ad97165e60030896..e67c57573ea3be869fecb7a00de8157e3f5437d1 100644
+--- a/src/main/java/net/minecraft/server/level/WorldServer.java
++++ b/src/main/java/net/minecraft/server/level/WorldServer.java
+@@ -168,6 +168,7 @@ import org.bukkit.event.server.MapInitializeEvent;
  import org.bukkit.event.weather.LightningStrikeEvent;
  import org.bukkit.event.world.TimeSkipEvent;
  // CraftBukkit end
@@ -2506,7 +2423,7 @@ index cf7d94aabab600822eb5e27f38690b06456d5fcc..4183117fe3977e4f0c927b4262a4804b
  
  public class WorldServer extends World implements GeneratorAccessSeed {
  
-@@ -206,6 +207,96 @@ public class WorldServer extends World implements GeneratorAccessSeed {
+@@ -319,6 +320,96 @@ public class WorldServer extends World implements GeneratorAccessSeed {
      }
      // Paper end - rewrite ticklistserver
  
@@ -2603,3 +2520,111 @@ index cf7d94aabab600822eb5e27f38690b06456d5fcc..4183117fe3977e4f0c927b4262a4804b
      // Add env and gen to constructor, WorldData -> WorldDataServer
      public WorldServer(MinecraftServer minecraftserver, Executor executor, Convertable.ConversionSession convertable_conversionsession, IWorldDataServer iworlddataserver, ResourceKey<World> resourcekey, DimensionManager dimensionmanager, WorldLoadListener worldloadlistener, ChunkGenerator chunkgenerator, boolean flag, long i, List<MobSpawner> list, boolean flag1, org.bukkit.World.Environment env, org.bukkit.generator.ChunkGenerator gen) {
          super(iworlddataserver, resourcekey, dimensionmanager, minecraftserver::getMethodProfiler, false, flag, i, gen, env, executor); // Paper pass executor
+diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
+index 429f0591c6a55f6c5d08a0755f7d39da676468bc..6a3e859eef2878d9e203bba7930e52d7513d96e8 100644
+--- a/src/main/java/net/minecraft/world/entity/Entity.java
++++ b/src/main/java/net/minecraft/world/entity/Entity.java
+@@ -299,6 +299,14 @@ public abstract class Entity implements INamableTileEntity, ICommandListener, ne
+     }
+     // CraftBukkit end
+ 
++    // Tuinity start
++    public final AxisAlignedBB getBoundingBoxAt(double x, double y, double z) {
++        double widthHalf = (double)this.size.width / 2.0;
++        double height = (double)this.size.height;
++        return new AxisAlignedBB(x - widthHalf, y, z - widthHalf, x + widthHalf, y + height, z + widthHalf);
++    }
++    // Tuinity end
++
+     // Paper start - optimise entity tracking
+     final org.spigotmc.TrackingRange.TrackingRangeType trackingRangeType = org.spigotmc.TrackingRange.getTrackingRangeType(this);
+ 
+diff --git a/src/main/java/net/minecraft/world/level/block/state/BlockBase.java b/src/main/java/net/minecraft/world/level/block/state/BlockBase.java
+index ac3709c8158d42ccafd457cfa44a16dc8c9eb949..19936d615c14c4cb4eeddfaaf8438765f6c0b8b3 100644
+--- a/src/main/java/net/minecraft/world/level/block/state/BlockBase.java
++++ b/src/main/java/net/minecraft/world/level/block/state/BlockBase.java
+@@ -347,14 +347,14 @@ public abstract class BlockBase {
+ 
+     public abstract static class BlockData extends IBlockDataHolder<Block, IBlockData> {
+ 
+-        private final int b;
+-        private final boolean e;
++        private final int b; public final int getEmittedLight() { return this.b; } // Tuinity - OBFHELPER
++        private final boolean e; public final boolean isTransparentOnSomeFaces() { return this.e; } // Tuinity - OBFHELPER
+         private final boolean f;
+         private final Material g;
+         private final MaterialMapColor h;
+         public final float strength;
+         private final boolean j;
+-        private final boolean k;
++        private final boolean k; public final boolean isOpaque() { return this.k; } // Tuinity - OBFHELPER
+         private final BlockBase.e l;
+         private final BlockBase.e m;
+         private final BlockBase.e n;
+@@ -395,12 +395,20 @@ public abstract class BlockBase {
+         protected Fluid fluid;
+         // Paper end
+ 
++        // Tuinity start - micro the hell out of this call
++        protected boolean shapeExceedsCube = true;
++        public final boolean shapeExceedsCube() {
++            return this.shapeExceedsCube;
++        }
++        // Tuinity end
++
+         public void a() {
+             this.fluid = this.getBlock().d(this.p()); // Paper - moved from getFluid()
+             this.isTicking = this.getBlock().isTicking(this.p()); // Paper - moved from isTicking()
+             if (!this.getBlock().o()) {
+                 this.a = new BlockBase.BlockData.Cache(this.p());
+             }
++            this.shapeExceedsCube = this.a == null || this.a.c; // Tuinity - moved from actual method to here
+ 
+         }
+ 
+@@ -424,10 +432,12 @@ public abstract class BlockBase {
+             return this.a != null ? this.a.g : this.getBlock().b(this.p(), iblockaccess, blockposition);
+         }
+ 
++        public final int getOpacity(IBlockAccess iblockaccess, BlockPosition blockposition) { return this.b(iblockaccess, blockposition); } // Tuinity - OBFHELPER
+         public int b(IBlockAccess iblockaccess, BlockPosition blockposition) {
+             return this.a != null ? this.a.h : this.getBlock().f(this.p(), iblockaccess, blockposition);
+         }
+ 
++        public final VoxelShape getCullingFace(IBlockAccess iblockaccess, BlockPosition blockposition, EnumDirection enumdirection) { return this.a(iblockaccess, blockposition, enumdirection); } // Tuinity - OBFHELPER
+         public VoxelShape a(IBlockAccess iblockaccess, BlockPosition blockposition, EnumDirection enumdirection) {
+             return this.a != null && this.a.i != null ? this.a.i[enumdirection.ordinal()] : VoxelShapes.a(this.c(iblockaccess, blockposition), enumdirection);
+         }
+@@ -437,7 +447,7 @@ public abstract class BlockBase {
+         }
+ 
+         public final boolean d() { // Paper
+-            return this.a == null || this.a.c;
++            return this.shapeExceedsCube; // Tuinity - moved into shape cache init
+         }
+ 
+         public final boolean e() { // Paper
+diff --git a/src/main/java/net/minecraft/world/level/levelgen/HeightMap.java b/src/main/java/net/minecraft/world/level/levelgen/HeightMap.java
+index aed66330b0f42eb8c8fbbebdb36f190db8e3b6b9..79214a93c533839d0c560a1e4f5904c62265590e 100644
+--- a/src/main/java/net/minecraft/world/level/levelgen/HeightMap.java
++++ b/src/main/java/net/minecraft/world/level/levelgen/HeightMap.java
+@@ -109,6 +109,7 @@ public class HeightMap {
+         }
+     }
+ 
++    public final int get(int x, int z) { return this.a(x, z); } // Tuinity - OBFHELPER
+     public int a(int i, int j) {
+         return this.a(c(i, j));
+     }
+diff --git a/src/main/java/net/minecraft/world/phys/shapes/VoxelShapes.java b/src/main/java/net/minecraft/world/phys/shapes/VoxelShapes.java
+index 858d4689e618c72250447adb61e0bcc3c156f8f3..38fde2e10adf06bf5c5141d17d82ba125b372cd7 100644
+--- a/src/main/java/net/minecraft/world/phys/shapes/VoxelShapes.java
++++ b/src/main/java/net/minecraft/world/phys/shapes/VoxelShapes.java
+@@ -324,6 +324,7 @@ public final class VoxelShapes {
+         }
+     }
+ 
++    public static boolean combinationOccludes(VoxelShape voxelshape, VoxelShape voxelshape1) { return b(voxelshape, voxelshape1); } // Tuinity - OBFHELPER
+     public static boolean b(VoxelShape voxelshape, VoxelShape voxelshape1) {
+         return voxelshape != b() && voxelshape1 != b() ? (voxelshape.isEmpty() && voxelshape1.isEmpty() ? false : !c(b(), b(voxelshape, voxelshape1, OperatorBoolean.OR), OperatorBoolean.ONLY_FIRST)) : true;
+     }
