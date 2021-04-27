@@ -9,10 +9,6 @@ on:
       - ver/1.16.5
       - dev/*
       - staging/1.16.5
-  pull_request:
-    paths-ignore:
-      - '*.md'
-      - 'Jenkinsfile'
         
 jobs:
   validation:
