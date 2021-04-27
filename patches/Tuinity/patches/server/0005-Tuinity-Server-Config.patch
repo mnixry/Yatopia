@@ -262,10 +262,10 @@ index 0000000000000000000000000000000000000000..0f66484a80d3cc7caaf8a111bd50229e
 +}
 \ No newline at end of file
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index dda93749eef9cd63e47ffe269b839512fe4db695..f6d443d0193ceea1b3248b66cb198be04822e9e7 100644
+index cc06164291f454e074c3955f63df758990b6075e..61830a9c953e35b5c429be18da4331806294ffa5 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
-@@ -1072,6 +1072,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+@@ -1082,6 +1082,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
                  // Paper end
  
                  PaperJvmChecker.checkJvm(); // Paper jvm version nag
@@ -274,12 +274,12 @@ index dda93749eef9cd63e47ffe269b839512fe4db695..f6d443d0193ceea1b3248b66cb198be0
                  org.spigotmc.WatchdogThread.hasStarted = true; // Paper
                  Arrays.fill( recentTps, 20 );
 diff --git a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
-index 52bb528e75eb43156ee2bf19877bc051a35bb6e3..d0cfc0053c9f49406a31de983e4980da8f8643d6 100644
+index df8270c40ed7ce6f628686ff6f4fa4cf96af6738..327b5ee357a24ad5d47b5a06458e6fb517fea625 100644
 --- a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
 +++ b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
-@@ -214,6 +214,7 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
-         com.destroystokyo.paper.PaperConfig.registerCommands();
+@@ -215,6 +215,7 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
          com.destroystokyo.paper.VersionHistoryManager.INSTANCE.getClass(); // load version history now
+         io.papermc.paper.brigadier.PaperBrigadierProviderImpl.INSTANCE.getClass(); // init PaperBrigadierProvider
          // Paper end
 +        com.tuinity.tuinity.config.TuinityConfig.init((java.io.File) options.valueOf("tuinity-settings")); // Tuinity - Server Config
  

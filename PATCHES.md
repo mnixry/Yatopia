@@ -102,6 +102,8 @@ This is an overview over all patches that are currently used.
 | server |  Breedable Polar Bears      | William Blake Galbreath |  |
 | server |  Bring back server name      | William Blake Galbreath |  |
 | api |  Bring back server name      | William Blake Galbreath |  |
+| server |  Cache climbing check for activation      | Paul Sauve |  |
+| server |  Cache coordinate key for micro opt      | Paul Sauve |  |
 | server |  Cache entityhuman display name      | Paul Sauve |  |
 | server |  Cache palette array      | Paul Sauve |  |
 | server |  Cat spawning options      | William Blake Galbreath |  |
@@ -120,6 +122,7 @@ This is an overview over all patches that are currently used.
 | server |  Config to always tame in Creative      | Encode42 |  |
 | server |  Config to disable Llama caravans      | Encode42 |  |
 | server |  Config to disable hostile mob spawn on ice      | Encode42 |  |
+| server |  Config to disable method profiler      | Paul Sauve |  |
 | server |  Config to ignore Dragon Head wearers and stare aggro      | Encode42 |  |
 | server |  Config to ignore nearby mobs when sleeping      | Encode42 |  |
 | server |  Config to make Creepers explode on death      | Encode42 |  |
@@ -151,6 +154,7 @@ This is an overview over all patches that are currently used.
 | server |  Consolidate flush calls for entity tracker packets      | Spottedleaf |  |
 | server |  Controllable Minecarts      | William Blake Galbreath |  |
 | server |  Copy passenger list in enderTeleportTo      | Spottedleaf |  |
+| server |  Correctly handle recursion for chunkholder updates      | Spottedleaf |  |
 | server |  Cows eat mushrooms      | William Blake Galbreath |  |
 | server |  Crying obsidian valid for portal frames      | William Blake Galbreath |  |
 | server |  Custom Locale Support      | Zoe |  |
@@ -169,6 +173,7 @@ This is an overview over all patches that are currently used.
 | server |  Distance manager tick timings      | Spottedleaf |  |
 | server |  Do not allow the server to unload chunks at request of      | Spottedleaf |  |
 | server |  Do not allow ticket level changes while unloading      | Spottedleaf |  |
+| server |  Do not copy visible chunks      | Spottedleaf |  |
 | server |  Do not load chunks during a crash report      | Spottedleaf |  |
 | server |  Do not retain playerchunkmap instance in light thread factory      | Spottedleaf |  |
 | server |  Do not run close logic for inventories on chunk unload      | Spottedleaf |  |
@@ -176,7 +181,6 @@ This is an overview over all patches that are currently used.
 | server |  Do not update TE&#39;s in generating chunks      | Spottedleaf |  |
 | server |  Don&#39;t allow StructureLocateEvent to change worlds      | Spottedleaf |  |
 | server |  Don&#39;t get entity equipment if not needed      | Paul Sauve |  |
-| server |  Don&#39;t load chunk with seed based feature search      | Phoenix616 |  |
 | server |  Don&#39;t lookup fluid state when raytracing      | Spottedleaf |  |
 | server |  Don&#39;t read neighbour chunk data off disk when converting      | Spottedleaf |  |
 | server |  Don&#39;t trigger Lootable Refresh for non player interaction      | Aikar |  |
@@ -279,7 +283,6 @@ This is an overview over all patches that are currently used.
 | server |  Movement options for armor stands      | Mariell Hoversholm |  |
 | server |  Multi-Threaded Server Ticking Vanilla      | Spottedleaf |  |
 | server |  Multi-Threaded ticking CraftBukkit      | Spottedleaf |  |
-| server |  Multithreaded entity tracking      | Paul Sauve |  |
 | server |  Name craft scheduler threads according to the plugin using      | Spottedleaf |  |
 | server |  New nbt cache      | Hugo Planque | ishland |
 | server |  Nuke streams off BlockPosition      | Ivan Pekov |  |
@@ -303,6 +306,7 @@ This is an overview over all patches that are currently used.
 | server |  Optimize advancement loading      | Ivan Pekov |  |
 | server |  Optimize inventory API item handling      | Phoenix616 |  |
 | server |  Optimize random calls in chunk ticking      | Paul Sauve |  |
+| server |  Optimize redundant calls      | Paul Sauve |  |
 | server |  Optimize some stuff in WorldServer ticking      | MrIvanPlays |  |
 | server |  Optimize whitelist command for multiple additions / removals      | Ivan Pekov |  |
 | server |  Option for Villager Clerics to farm Nether Wart      | jmp |  |
@@ -352,7 +356,7 @@ This is an overview over all patches that are currently used.
 | server |  Reduce allocation rate from crammed entities      | Spottedleaf |  |
 | server |  Reduce allocs &amp; improve perf of StructureManager      | Paul Sauve |  |
 | server |  Reduce chunk loading &amp; lookups      | Paul Sauve |  |
-| server |  Reduce entity chunk ticking checks from 3 to 1      | Paul Sauve |  |
+| server |  Reduce frequency of checking for entity despawn      | Paul Sauve |  |
 | server |  Reduce iterator allocation from chunk gen      | Spottedleaf |  |
 | server |  Reduce pathfinder branches      | Spottedleaf |  |
 | server |  Reduce projectile chunk loading      | Paul Sauve |  |
@@ -362,6 +366,7 @@ This is an overview over all patches that are currently used.
 | server |  Remove streams      | Paul Sauve |  |
 | server |  Remove streams for villager AI      | Spottedleaf |  |
 | server |  Replace player chunk loader system      | Spottedleaf |  |
+| server |  Replace ticket level propagator      | Spottedleaf |  |
 | server |  Revert MC-4 fix      | Spottedleaf |  |
 | server |  Revert getChunkAt(Async) retaining chunks for long periods of      | Spottedleaf |  |
 | server |  Rework PlayerChunk main thread checks      | Spottedleaf |  |
@@ -379,6 +384,7 @@ This is an overview over all patches that are currently used.
 | server |  Simpler ShapelessRecipes comparison for Vanilla      | Paul Sauve |  |
 | server |  Skip POI finding if stuck in vehicle      | Paul Sauve |  |
 | server |  Skip copying unloading tile entities      | Paul Sauve |  |
+| server |  Skip creating hashset for entity track range      | Paul Sauve |  |
 | server |  Skip events if there&#39;s no listeners      | William Blake Galbreath |  |
 | server |  Smarter statistics ticking      | Mykyta Komarnytskyy |  |
 | server |  Smol entity optimisations      | Ivan Pekov |  |
@@ -425,7 +431,6 @@ This is an overview over all patches that are currently used.
 | server |  Zombie horse naturally spawn      | William Blake Galbreath |  |
 | server |  add config for logging login location      | Simon Gardling |  |
 | server |  dont load chunks for physics      | Aikar |  |
-| server |  lithium AI      | JellySquid |  |
 | server |  lithium DataTrackerMixin      | JellySquid | tr7zw |
 | server |  lithium HashedList      | JellySquid |  |
 | server |  lithium MixinBox      | JellySquid |  |
@@ -434,12 +439,12 @@ This is an overview over all patches that are currently used.
 | server |  lithium NoiseChunkGeneratorMixin      | JellySquid |  |
 | server |  lithium PerlinNoiseSamplerMixin      | JellySquid | Bud Gidiere |
 | server |  lithium VoronoiBiomeAccessTypeMixin      | JellySquid |  |
-| server |  lithium block      | JellySquid |  |
-| server |  lithium entity      | JellySquid |  |
+| server |  lithium block      | JellySquid | Hugo Planque |
+| server |  lithium entity      | JellySquid | Hugo Planque |
 | server |  lithium enum_values      | JellySquid |  |
-| server |  lithium gen      | JellySquid |  |
+| server |  lithium gen      | JellySquid | Hugo Planque |
 | server |  lithium reduce allocations      | JellySquid | Mykyta Komarnytskyy |
-| server |  lithium shape      | JellySquid |  |
+| server |  lithium shape      | JellySquid | Hugo Planque |
 | server |  lithium: cache chunk gen sea level      | SuperCoder7979 |  |
 | server |  lithium: optimize &#96;BlockPos.iterateOutwards&#96; by caching      | 2No2Name |  |
 | server |  lithium: skip ticking block entities that are doing nothing      | 2No2Name |  |

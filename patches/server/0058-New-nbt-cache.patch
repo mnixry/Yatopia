@@ -8,10 +8,10 @@ The goal of this patch is to reduce I/O operations from the main thread while sa
 Co-authored-by: ishland <ishlandmc@yeah.net>
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index ada7639c31fe6952f689bc2e437db57abe1b1037..0f7fec04ac5c46dec5947be337499f4f93df39f0 100644
+index 13f9af375011fe6a7e96605105d147445d58d26f..c1fd0149e1c04f33911bef77afa5d1c7938a6048 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
-@@ -941,7 +941,9 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+@@ -951,7 +951,9 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
          }
          // Spigot start
          MCUtil.asyncExecutor.shutdown(); // Paper
