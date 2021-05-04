@@ -5,11 +5,11 @@ Subject: [PATCH] Customizable wither health and healing
 
 Adds the ability to customize the health of the wither, as well as the amount that it heals, and how often.
 
-diff --git a/src/main/java/net/minecraft/server/EntityWither.java b/src/main/java/net/minecraft/server/EntityWither.java
-index 6fc097d2ae11ec5d1c12ce070c8d69d2249cf3c7..c9037d847b12a705194a0bd70f11c5dae8f50bfa 100644
---- a/src/main/java/net/minecraft/server/EntityWither.java
-+++ b/src/main/java/net/minecraft/server/EntityWither.java
-@@ -150,6 +150,11 @@ public class EntityWither extends EntityMonster implements IRangedEntity {
+diff --git a/src/main/java/net/minecraft/world/entity/boss/wither/EntityWither.java b/src/main/java/net/minecraft/world/entity/boss/wither/EntityWither.java
+index 4c0a555cdb5bc34c73040b9533beaee56cbce70a..beb4d59faf4bd7501468b2eaa0e866613625e963 100644
+--- a/src/main/java/net/minecraft/world/entity/boss/wither/EntityWither.java
++++ b/src/main/java/net/minecraft/world/entity/boss/wither/EntityWither.java
+@@ -207,6 +207,11 @@ public class EntityWither extends EntityMonster implements IRangedEntity {
          skull.setPositionRaw(headX, headY, headZ);
          world.addEntity(skull);
      }
@@ -21,7 +21,7 @@ index 6fc097d2ae11ec5d1c12ce070c8d69d2249cf3c7..c9037d847b12a705194a0bd70f11c5da
      // Purpur end
  
      @Override
-@@ -354,7 +359,7 @@ public class EntityWither extends EntityMonster implements IRangedEntity {
+@@ -411,7 +416,7 @@ public class EntityWither extends EntityMonster implements IRangedEntity {
  
              this.setInvul(i);
              if (this.ticksLived % 10 == 0) {
@@ -30,7 +30,7 @@ index 6fc097d2ae11ec5d1c12ce070c8d69d2249cf3c7..c9037d847b12a705194a0bd70f11c5da
              }
  
          } else {
-@@ -463,8 +468,10 @@ public class EntityWither extends EntityMonster implements IRangedEntity {
+@@ -520,8 +525,10 @@ public class EntityWither extends EntityMonster implements IRangedEntity {
                  }
              }
  
@@ -44,10 +44,10 @@ index 6fc097d2ae11ec5d1c12ce070c8d69d2249cf3c7..c9037d847b12a705194a0bd70f11c5da
  
              //this.bossBattle.setProgress(this.getHealth() / this.getMaxHealth()); // Paper - Moved down
 diff --git a/src/main/java/net/pl3x/purpur/PurpurWorldConfig.java b/src/main/java/net/pl3x/purpur/PurpurWorldConfig.java
-index cf4ac765fdbaf961e913ca028edc084373eba978..94a870113dc45201379c1efc7e83162c303573df 100644
+index d6bf755d3f978adaec04e5feaab659445d49305e..c4e04c2986d7029e76a930c33842c0355110244b 100644
 --- a/src/main/java/net/pl3x/purpur/PurpurWorldConfig.java
 +++ b/src/main/java/net/pl3x/purpur/PurpurWorldConfig.java
-@@ -921,10 +921,21 @@ public class PurpurWorldConfig {
+@@ -967,10 +967,21 @@ public class PurpurWorldConfig {
      public boolean witherRidable = false;
      public boolean witherRidableInWater = false;
      public double witherMaxY = 256D;

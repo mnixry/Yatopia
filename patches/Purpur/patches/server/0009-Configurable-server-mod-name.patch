@@ -5,20 +5,20 @@ Subject: [PATCH] Configurable server mod name
 
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 80b7ef7c02c8f99b81a6c33d6d969690b933eb36..5d64157b394b49d638e0295438f235c9492e1128 100644
+index 42c24781d058cee94db8f0fa1a6849b41a0394ff..6121ef7fcbadb50d05fad4270556e825f636f4d8 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
-@@ -1520,7 +1520,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+@@ -1646,7 +1646,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
      }
  
      public String getServerModName() {
--        return "Purpur"; // Purpur // Tuinity // Paper // Spigot // CraftBukkit
-+        return net.pl3x.purpur.PurpurConfig.serverModName; // Purpur // Tuinity // Paper // Spigot // CraftBukkit
+-        return "Purpur"; // Purpur // Airplane // Tuinity // Paper // Spigot // CraftBukkit
++        return net.pl3x.purpur.PurpurConfig.serverModName; // Purpur // Airplane // Tuinity // Paper // Spigot // CraftBukkit
      }
  
      public CrashReport b(CrashReport crashreport) {
 diff --git a/src/main/java/net/pl3x/purpur/PurpurConfig.java b/src/main/java/net/pl3x/purpur/PurpurConfig.java
-index 406e840499e09638e8b325d0e52b764e80acc777..4627261562a1482aecf4034b8717ecccc2dd9eb0 100644
+index 215d691de61c514bb75077d25428c2c2f56df0b5..7eadf925c4e4429fa63fb02af9e87bf2ed68efa6 100644
 --- a/src/main/java/net/pl3x/purpur/PurpurConfig.java
 +++ b/src/main/java/net/pl3x/purpur/PurpurConfig.java
 @@ -139,6 +139,11 @@ public class PurpurConfig {

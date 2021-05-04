@@ -5,10 +5,10 @@ Subject: [PATCH] Add GameProfileLookupEvent
 
 
 diff --git a/pom.xml b/pom.xml
-index 78524688e28e5393a9ff2d2007785a093f8aa0c3..61670767a97a9f9e6285961555fed3b7cedf56b0 100644
+index 0f456204857fc9dea93a7dd47189bb059d1712fc..57ab779204e6e98d52d4b21e6aad82c33ccc8958 100644
 --- a/pom.xml
 +++ b/pom.xml
-@@ -52,6 +52,10 @@
+@@ -43,6 +43,10 @@
              <id>sonatype</id>
              <url>https://oss.sonatype.org/content/groups/public/</url>
          </repository>
@@ -18,8 +18,8 @@ index 78524688e28e5393a9ff2d2007785a093f8aa0c3..61670767a97a9f9e6285961555fed3b7
 +        </repository>
      </repositories>
  
-     <pluginRepositories>
-@@ -76,6 +80,13 @@
+     <!-- Paper start -->
+@@ -60,6 +64,13 @@
      <!-- Paper end -->
  
      <dependencies>

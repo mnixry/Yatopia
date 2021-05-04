@@ -5,12 +5,12 @@ Subject: [PATCH] Add NBT API as a first-class lib
 
 
 diff --git a/pom.xml b/pom.xml
-index 05c5ab1e3bc2f6c527332736013d77bb65f29f6d..6b235ff5227c8292435bad8720c6bb0ac1c4adf7 100644
+index 3a05118d764a6a934b4f834c3080e4ed20c227e9..d0259f18488e1ecf0276865e0ff7958726a40033 100644
 --- a/pom.xml
 +++ b/pom.xml
-@@ -369,6 +369,10 @@
-                                     <pattern>net.minecraft.server</pattern>
-                                     <shadedPattern>net.minecraft.server.v${minecraft_version}</shadedPattern>
+@@ -374,6 +374,10 @@
+                                     <shadedPattern>net/minecraft/server/v${minecraft_version}/$2</shadedPattern>
+                                     <rawString>true</rawString>
                                  </relocation>
 +		                        <relocation>
 +		                            <pattern>de.tr7zw.changeme.nbtapi</pattern>

@@ -5,7 +5,7 @@ Subject: [PATCH] Populator seed controls
 
 
 diff --git a/src/main/java/co/aikar/timings/TimingsExport.java b/src/main/java/co/aikar/timings/TimingsExport.java
-index dae2e5d70756c5b61163d57099b65f7e415b288c..55b67f1057224101272f9d6023a93872c4423405 100644
+index 5e672a0660d0aceffcdb26d185590ca18aa4f023..4b171a2a60e24947e884f8988920f335bd99a471 100644
 --- a/src/main/java/co/aikar/timings/TimingsExport.java
 +++ b/src/main/java/co/aikar/timings/TimingsExport.java
 @@ -293,7 +293,7 @@ public class TimingsExport extends Thread {
@@ -18,7 +18,7 @@ index dae2e5d70756c5b61163d57099b65f7e415b288c..55b67f1057224101272f9d6023a93872
              }
              final Object val = config.get(key);
 diff --git a/src/main/java/com/tuinity/tuinity/config/TuinityConfig.java b/src/main/java/com/tuinity/tuinity/config/TuinityConfig.java
-index 0959aa6855a150b121b9b75885216c46b151179e..b181b22cdd78f9ddeea38f315a5dc856134d1c58 100644
+index e1dc7c1025e19f7393a45719af8fe7aae016184d..dd45a896998e4d5637ef0dd08f2b72d6b6f891de 100644
 --- a/src/main/java/com/tuinity/tuinity/config/TuinityConfig.java
 +++ b/src/main/java/com/tuinity/tuinity/config/TuinityConfig.java
 @@ -1,5 +1,6 @@
@@ -27,8 +27,8 @@ index 0959aa6855a150b121b9b75885216c46b151179e..b181b22cdd78f9ddeea38f315a5dc856
 +import co.aikar.timings.TimingsManager;
  import com.destroystokyo.paper.util.SneakyThrow;
  import net.minecraft.server.MinecraftServer;
- import net.minecraft.server.TicketType;
-@@ -382,6 +383,19 @@ public final class TuinityConfig {
+ import net.minecraft.server.level.TicketType;
+@@ -410,6 +411,19 @@ public final class TuinityConfig {
              this.spawnLimitAmbient = this.getInt(path + ".ambient", -1);
          }
  
@@ -49,11 +49,21 @@ index 0959aa6855a150b121b9b75885216c46b151179e..b181b22cdd78f9ddeea38f315a5dc856
  
  }
 \ No newline at end of file
-diff --git a/src/main/java/net/minecraft/server/BiomeBase.java b/src/main/java/net/minecraft/server/BiomeBase.java
-index 0854ac9ef586b378420d9899f3afd2755e6f9f33..df6874c1cf5fc5764dc575866aab87883b6cf035 100644
---- a/src/main/java/net/minecraft/server/BiomeBase.java
-+++ b/src/main/java/net/minecraft/server/BiomeBase.java
-@@ -189,6 +189,10 @@ public final class BiomeBase {
+diff --git a/src/main/java/net/minecraft/world/level/biome/BiomeBase.java b/src/main/java/net/minecraft/world/level/biome/BiomeBase.java
+index 9bbd175f7e20591bbefdbddcb5e998e7098c5adb..c4fb051739c1c186c1574185e0653f513755987d 100644
+--- a/src/main/java/net/minecraft/world/level/biome/BiomeBase.java
++++ b/src/main/java/net/minecraft/world/level/biome/BiomeBase.java
+@@ -23,7 +23,9 @@ import net.minecraft.core.SectionPosition;
+ import net.minecraft.data.RegistryGeneration;
+ import net.minecraft.resources.MinecraftKey;
+ import net.minecraft.resources.RegistryFileCodec;
++import net.minecraft.server.level.ChunkProviderServer;
+ import net.minecraft.server.level.RegionLimitedWorldAccess;
++import net.minecraft.server.level.WorldServer;
+ import net.minecraft.util.INamable;
+ import net.minecraft.world.level.ChunkCoordIntPair;
+ import net.minecraft.world.level.EnumSkyBlock;
+@@ -257,6 +259,10 @@ public final class BiomeBase {
          return this.k;
      }
  
@@ -64,7 +74,7 @@ index 0854ac9ef586b378420d9899f3afd2755e6f9f33..df6874c1cf5fc5764dc575866aab8788
      public void a(StructureManager structuremanager, ChunkGenerator chunkgenerator, RegionLimitedWorldAccess regionlimitedworldaccess, long i, SeededRandom seededrandom, BlockPosition blockposition) {
          List<List<Supplier<WorldGenFeatureConfigured<?, ?>>>> list = this.k.c();
          int j = WorldGenStage.Decoration.values().length;
-@@ -225,12 +229,24 @@ public final class BiomeBase {
+@@ -293,12 +299,24 @@ public final class BiomeBase {
                  }
              }
  

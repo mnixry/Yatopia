@@ -10,24 +10,11 @@ step up the stop() spamming after 15s to really kill the main thread.
 gui. It looks like during sigint shutdown there can be some
 deadlock between the server thread and awt shutdown thread here.
 
-diff --git a/src/main/java/net/minecraft/server/DedicatedServer.java b/src/main/java/net/minecraft/server/DedicatedServer.java
-index 617ba6fb85c55967360ca270ee8feeff5acbf8e0..2644b190813cc934914aeab78fbd6515d1a37c4a 100644
---- a/src/main/java/net/minecraft/server/DedicatedServer.java
-+++ b/src/main/java/net/minecraft/server/DedicatedServer.java
-@@ -360,7 +360,7 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
-         }
- 
-         if (this.q != null) {
--            this.q.b();
-+            //this.q.b(); // Tuinity - do not wait for AWT, causes deadlock with sigint handler (AWT shutdown will properly clear our resources anyways)
-         }
- 
-         if (this.remoteControlListener != null) {
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 29e7b4aa6e94566d446221cd28c2f60fdb3fccab..7ac34a8959a797bf2af96f3f402fa65cffe3d666 100644
+index 078b8444d6f7c79d504805bce011b26a951b5fa3..2767a9369ddc922f1d9c7cb6c7acc8270545535a 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
-@@ -756,10 +756,11 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+@@ -878,10 +878,11 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
          org.spigotmc.WatchdogThread.doStop(); // Paper
          if (!isMainThread()) {
              MinecraftServer.LOGGER.info("Stopping main thread (Ignore any thread death message you see! - DO NOT REPORT THREAD DEATH TO PAPER)");
@@ -40,3 +27,16 @@ index 29e7b4aa6e94566d446221cd28c2f60fdb3fccab..7ac34a8959a797bf2af96f3f402fa65c
                  } catch (InterruptedException e) {}
              }
              // We've just obliterated the main thread, this will prevent stop from dying when removing players
+diff --git a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
+index 327b5ee357a24ad5d47b5a06458e6fb517fea625..fa7a78549a9bb92b93c305dc16f43a9ace7f6f43 100644
+--- a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
++++ b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
+@@ -400,7 +400,7 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
+         }
+ 
+         if (this.q != null) {
+-            this.q.b();
++            //this.q.b(); // Tuinity - do not wait for AWT, causes deadlock with sigint handler (AWT shutdown will properly clear our resources anyways)
+         }
+ 
+         if (this.remoteControlListener != null) {

@@ -5,7 +5,7 @@ Subject: [PATCH] Modify POM
 
 
 diff --git a/pom.xml b/pom.xml
-index 821df3413345c613eccff158f8081cf9ba848a14..78524688e28e5393a9ff2d2007785a093f8aa0c3 100644
+index 4d826aa8ea1139e66514767da6ba17811f7ecc5c..0f456204857fc9dea93a7dd47189bb059d1712fc 100644
 --- a/pom.xml
 +++ b/pom.xml
 @@ -3,18 +3,18 @@
@@ -32,8 +32,8 @@ index 821df3413345c613eccff158f8081cf9ba848a14..78524688e28e5393a9ff2d2007785a09
      <description>An enhanced plugin API for Minecraft servers.</description>
  
      <properties>
-@@ -24,6 +24,19 @@
-         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+@@ -25,6 +25,19 @@
+         <adventure.version>4.7.0</adventure.version> <!-- Paper - When updating this make sure to update the linked JavaDocs on the homepage as well! -->
      </properties>
  
 +    <!-- Yatopia start -->
@@ -50,5 +50,47 @@ index 821df3413345c613eccff158f8081cf9ba848a14..78524688e28e5393a9ff2d2007785a09
 +    <!-- Yatopia end -->
 +
      <repositories>
-         <!--
-             If you are a plugin developer, please use https://hub.spigotmc.org/nexus/content/repositories/snapshots/
+         <repository>
+             <id>sonatype</id>
+@@ -68,7 +81,7 @@
+         <dependency>
+             <groupId>it.unimi.dsi</groupId>
+             <artifactId>fastutil</artifactId>
+-            <version>8.2.2</version>
++            <version>8.5.4</version>
+             <scope>provided</scope>
+         </dependency>
+         <dependency>
+@@ -115,7 +128,7 @@
+         <dependency>
+             <groupId>org.yaml</groupId>
+             <artifactId>snakeyaml</artifactId>
+-            <version>1.27</version>
++            <version>1.28</version>
+             <scope>compile</scope>
+         </dependency>
+         <!-- annotations -->
+@@ -129,7 +142,7 @@
+         <dependency>
+             <groupId>org.slf4j</groupId>
+             <artifactId>slf4j-api</artifactId>
+-            <version>1.7.25</version>
++            <version>1.7.30</version>
+             <scope>compile</scope>
+         </dependency>
+         <!-- testing -->
+@@ -155,12 +168,12 @@
+         <dependency>
+             <groupId>org.ow2.asm</groupId>
+             <artifactId>asm</artifactId>
+-            <version>9.0</version>
++            <version>9.1</version>
+         </dependency>
+         <dependency>
+             <groupId>org.ow2.asm</groupId>
+             <artifactId>asm-commons</artifactId>
+-            <version>9.0</version>
++            <version>9.1</version>
+         </dependency>
+     </dependencies>
+ 

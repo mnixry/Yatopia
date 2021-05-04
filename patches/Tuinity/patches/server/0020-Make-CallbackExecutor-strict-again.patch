@@ -18,11 +18,11 @@ This patch also reverts incorrect use(s) of the class by paper.
   the callback executor also prevents the future from catching
   any exception thrown from it.
 
-diff --git a/src/main/java/net/minecraft/server/ChunkProviderServer.java b/src/main/java/net/minecraft/server/ChunkProviderServer.java
-index c8c4d4f3d5a0ca6255473f3f256eeb32f18a9984..e1a17abda657c7eb7aee7cd0763bcb48cc8b154a 100644
---- a/src/main/java/net/minecraft/server/ChunkProviderServer.java
-+++ b/src/main/java/net/minecraft/server/ChunkProviderServer.java
-@@ -174,9 +174,9 @@ public class ChunkProviderServer extends IChunkProvider {
+diff --git a/src/main/java/net/minecraft/server/level/ChunkProviderServer.java b/src/main/java/net/minecraft/server/level/ChunkProviderServer.java
+index ff883a306a138c2940d3de6ec46dfeb9d98e5b93..bc8114715f09496efa8aec8426c53542fd444c12 100644
+--- a/src/main/java/net/minecraft/server/level/ChunkProviderServer.java
++++ b/src/main/java/net/minecraft/server/level/ChunkProviderServer.java
+@@ -199,9 +199,9 @@ public class ChunkProviderServer extends IChunkProvider {
  
                  try {
                      if (onLoad != null) {
@@ -34,11 +34,11 @@ index c8c4d4f3d5a0ca6255473f3f256eeb32f18a9984..e1a17abda657c7eb7aee7cd0763bcb48
                      }
                  } catch (Throwable thr) {
                      if (thr instanceof ThreadDeath) {
-diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-index 8b9e3418cdb90227eee149e25c4e208979aaf8fb..b05683f65a51363672779b5aebdce166743218c8 100644
---- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
-+++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-@@ -122,31 +122,28 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+diff --git a/src/main/java/net/minecraft/server/level/PlayerChunkMap.java b/src/main/java/net/minecraft/server/level/PlayerChunkMap.java
+index 31d5356b1498f55ef53f3c66b6629bc556b9508f..2beb14192910a35936e0ff5878c227bf22abd442 100644
+--- a/src/main/java/net/minecraft/server/level/PlayerChunkMap.java
++++ b/src/main/java/net/minecraft/server/level/PlayerChunkMap.java
+@@ -176,31 +176,28 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
      // CraftBukkit start - recursion-safe executor for Chunk loadCallback() and unloadCallback()
      public final CallbackExecutor callbackExecutor = new CallbackExecutor();
      public static final class CallbackExecutor implements java.util.concurrent.Executor, Runnable {

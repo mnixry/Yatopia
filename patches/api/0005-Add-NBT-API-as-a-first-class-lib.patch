@@ -5,10 +5,10 @@ Subject: [PATCH] Add NBT API as a first-class lib
 
 
 diff --git a/pom.xml b/pom.xml
-index 61670767a97a9f9e6285961555fed3b7cedf56b0..62a8c9c0f7d66eb51416c1fe723821a082cdfc95 100644
+index 57ab779204e6e98d52d4b21e6aad82c33ccc8958..cc3149a51f5780b73c11492e13dbe7eb86d83e6c 100644
 --- a/pom.xml
 +++ b/pom.xml
-@@ -56,6 +56,11 @@
+@@ -47,6 +47,11 @@
              <id>mojang</id>
              <url>https://libraries.minecraft.net/</url>
          </repository>
@@ -19,10 +19,10 @@ index 61670767a97a9f9e6285961555fed3b7cedf56b0..62a8c9c0f7d66eb51416c1fe723821a0
 +        </repository>
      </repositories>
  
-     <pluginRepositories>
-@@ -202,6 +207,11 @@
+     <!-- Paper start -->
+@@ -186,6 +191,11 @@
              <artifactId>asm-commons</artifactId>
-             <version>9.0</version>
+             <version>9.1</version>
          </dependency>
 +        <dependency>
 +            <groupId>de.tr7zw</groupId>
@@ -32,7 +32,7 @@ index 61670767a97a9f9e6285961555fed3b7cedf56b0..62a8c9c0f7d66eb51416c1fe723821a0
      </dependencies>
  
      <build>
-@@ -277,6 +287,12 @@
+@@ -260,6 +270,12 @@
                      <dependencyReducedPomLocation>${project.build.directory}/dependency-reduced-pom.xml</dependencyReducedPomLocation>
                      <!-- when downloading via Maven we can pull depends individually -->
                      <shadedArtifactAttached>true</shadedArtifactAttached>
@@ -98,7 +98,7 @@ index 3b10fcc13893403b29f0260b8605144679e89b82..1e9a96d8b08cc396acf73dc420830093
 +    // Yatopia end
  }
 diff --git a/src/main/java/org/bukkit/entity/Entity.java b/src/main/java/org/bukkit/entity/Entity.java
-index 1e25f387e053b648477a3e9dace1a6c95e7f8cba..02c5967dcc8591d4324d1218eb8c2ff0cb961647 100644
+index 7fa5242bd44c9b19648d79fa8fecbb7ee125288e..592c65017e601534dad56e988d096992ad70b05a 100644
 --- a/src/main/java/org/bukkit/entity/Entity.java
 +++ b/src/main/java/org/bukkit/entity/Entity.java
 @@ -771,4 +771,26 @@ public interface Entity extends Metadatable, CommandSender, Nameable, Persistent
@@ -129,10 +129,10 @@ index 1e25f387e053b648477a3e9dace1a6c95e7f8cba..02c5967dcc8591d4324d1218eb8c2ff0
 +    // Yatopia end
  }
 diff --git a/src/main/java/org/bukkit/inventory/ItemStack.java b/src/main/java/org/bukkit/inventory/ItemStack.java
-index f0c17f1342d9c70cb4fe1fc46dd8b9006037e860..24a3521d074471c0024a8d23acb7963af3e293e1 100644
+index 314658c7dac1b1fbb440ec85133e6670e52ba684..714070dcb1fc35ba4aa42a3ecece810599777c22 100644
 --- a/src/main/java/org/bukkit/inventory/ItemStack.java
 +++ b/src/main/java/org/bukkit/inventory/ItemStack.java
-@@ -1445,4 +1445,42 @@ public class ItemStack implements Cloneable, ConfigurationSerializable, net.kyor
+@@ -1478,4 +1478,42 @@ public class ItemStack implements Cloneable, ConfigurationSerializable, net.kyor
      }
  
      // Purpur end

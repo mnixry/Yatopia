@@ -5,15 +5,15 @@ Subject: [PATCH] Rebrand
 
 
 diff --git a/pom.xml b/pom.xml
-index e83e4241a56fe131a75fe21cc1518992c089da2c..752d62eb3b87ab24260ec2c029bae0d2b0e3b908 100644
+index c917f825378dd16a329105b4e7fcc8882755bc5a..6fe8dad8df109531f2b38fbfcb58b6807dbb8cf0 100644
 --- a/pom.xml
 +++ b/pom.xml
-@@ -27,8 +27,10 @@
+@@ -39,8 +39,10 @@
  
      <dependencies>
          <dependency>
--            <groupId>com.tuinity</groupId>
--            <artifactId>tuinity-api</artifactId>
+-            <groupId>gg.airplane</groupId>
+-            <artifactId>airplane-api</artifactId>
 +            <!-- Purpur start - our "upstream" is Paper (not Tuinity), so this is necessary for DependencyLoading.kt to work properly -->
 +            <groupId>net.pl3x.purpur</groupId>
 +            <artifactId>purpur-api</artifactId>
@@ -21,24 +21,68 @@ index e83e4241a56fe131a75fe21cc1518992c089da2c..752d62eb3b87ab24260ec2c029bae0d2
              <version>${project.version}</version>
              <scope>compile</scope>
          </dependency>
+@@ -182,6 +184,14 @@
+         </dependency>
+     </dependencies>
+ 
++    <repositories>
++        <!-- Purpur - Snapshots -->
++        <repository>
++            <id>purpur-snapshots</id>
++            <url>https://repo.pl3x.net/</url>
++        </repository>
++    </repositories>
++
+     <!-- This builds a completely 'ready to start' jar with all dependencies inside -->
+     <build>
+         <finalName>tuinity-${minecraft.version}</finalName>
+@@ -361,8 +371,15 @@
+                     <dependency>
+                         <groupId>org.eclipse.jdt</groupId>
+                         <artifactId>ecj</artifactId>
+-                        <version>3.24.0</version>
++                        <!-- Purpur start -->
++                        <version>3.25.0</version>
++                    </dependency>
++                    <dependency>
++                        <groupId>org.jetbrains.kotlin</groupId>
++                        <artifactId>kotlin-stdlib</artifactId>
++                        <version>1.4.33-SNAPSHOT</version>
+                     </dependency>
++                    <!-- Purpur end -->
+                 </dependencies>
+             </plugin>
+             <plugin>
 diff --git a/src/main/java/com/destroystokyo/paper/console/PaperConsole.java b/src/main/java/com/destroystokyo/paper/console/PaperConsole.java
-index 74ed02fa9296583977bb721014b10ff8b708b43c..c1280478ee4565003883df9607d4a8a0e8fe4faa 100644
+index ad87b575a0261200b280884e054a59e3ce59c41c..e56ebeaaa12494817d31099eed54ef2c50b98b9e 100644
 --- a/src/main/java/com/destroystokyo/paper/console/PaperConsole.java
 +++ b/src/main/java/com/destroystokyo/paper/console/PaperConsole.java
-@@ -17,7 +17,7 @@ public final class PaperConsole extends SimpleTerminalConsole {
+@@ -19,7 +19,7 @@ public final class PaperConsole extends SimpleTerminalConsole {
      @Override
      protected LineReader buildReader(LineReaderBuilder builder) {
-         return super.buildReader(builder
+         builder
 -                .appName("Paper")
 +                .appName("Purpur") // Purpur
                  .variable(LineReader.HISTORY_FILE, java.nio.file.Paths.get(".console_history"))
                  .completer(new ConsoleCommandCompleter(this.server))
-         );
+                 .option(LineReader.Option.COMPLETE_IN_WORD, true);
+diff --git a/src/main/java/gg/airplane/compat/ServerConfigurations.java b/src/main/java/gg/airplane/compat/ServerConfigurations.java
+index f4976428bc721319d2926e97cbe0f64c6e9e503c..044ad28bd1fd1c1e25061f9f811fc10baf7f5f72 100644
+--- a/src/main/java/gg/airplane/compat/ServerConfigurations.java
++++ b/src/main/java/gg/airplane/compat/ServerConfigurations.java
+@@ -23,6 +23,7 @@ public class ServerConfigurations {
+       "spigot.yml",
+       "paper.yml",
+       "tuinity.yml",
++      "purpur.yml", // Purpur
+       "airplane.air"
+     };
+ 
 diff --git a/src/main/java/net/minecraft/server/EULA.java b/src/main/java/net/minecraft/server/EULA.java
-index 229c3b0f0c650b501f31147adaa17194af57fedd..f88cf526d272fe47b5a474c0b344b748ee4009fa 100644
+index 3bc5cd1e53dd7c94b948e7f57f0dc8e073e349b0..87891161f5b06bb8be0e2016b490484e6daca9d7 100644
 --- a/src/main/java/net/minecraft/server/EULA.java
 +++ b/src/main/java/net/minecraft/server/EULA.java
-@@ -70,7 +70,7 @@ public class EULA {
+@@ -72,7 +72,7 @@ public class EULA {
                      Properties properties = new Properties();
  
                      properties.setProperty("eula", "false");
@@ -48,24 +92,24 @@ index 229c3b0f0c650b501f31147adaa17194af57fedd..f88cf526d272fe47b5a474c0b344b748
                      throwable = throwable1;
                      throw throwable1;
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 7ac34a8959a797bf2af96f3f402fa65cffe3d666..80b7ef7c02c8f99b81a6c33d6d969690b933eb36 100644
+index 2bb00a42492b08036e984d3e1d9a564d4b4226c2..42c24781d058cee94db8f0fa1a6849b41a0394ff 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
-@@ -1520,7 +1520,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
+@@ -1646,7 +1646,7 @@ public abstract class MinecraftServer extends IAsyncTaskHandlerReentrant<TickTas
      }
  
      public String getServerModName() {
--        return "Tuinity"; // Tuinity //Paper - Paper > // Spigot - Spigot > // CraftBukkit - cb > vanilla!
-+        return "Purpur"; // Purpur // Tuinity // Paper // Spigot // CraftBukkit
+-        return "Airplane"; // Airplane // Tuinity //Paper - Paper > // Spigot - Spigot > // CraftBukkit - cb > vanilla!
++        return "Purpur"; // Purpur // Airplane // Tuinity // Paper // Spigot // CraftBukkit
      }
  
      public CrashReport b(CrashReport crashreport) {
 diff --git a/src/main/java/net/pl3x/purpur/PurpurVersionFetcher.java b/src/main/java/net/pl3x/purpur/PurpurVersionFetcher.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..d8b408f061d96e2fa8e2e587462e2221aaee80ce
+index 0000000000000000000000000000000000000000..cabfcebf9f944f7a2a2a1cffc7401435803a8741
 --- /dev/null
 +++ b/src/main/java/net/pl3x/purpur/PurpurVersionFetcher.java
-@@ -0,0 +1,115 @@
+@@ -0,0 +1,119 @@
 +package net.pl3x.purpur;
 +
 +import com.destroystokyo.paper.VersionHistoryManager;
@@ -75,6 +119,10 @@ index 0000000000000000000000000000000000000000..d8b408f061d96e2fa8e2e587462e2221
 +import com.google.gson.Gson;
 +import com.google.gson.JsonObject;
 +import com.google.gson.JsonSyntaxException;
++import net.kyori.adventure.text.Component;
++import net.kyori.adventure.text.TextComponent;
++import net.kyori.adventure.text.format.NamedTextColor;
++import net.kyori.adventure.text.format.TextDecoration;
 +
 +import javax.annotation.Nonnull;
 +import javax.annotation.Nullable;
@@ -95,15 +143,15 @@ index 0000000000000000000000000000000000000000..d8b408f061d96e2fa8e2e587462e2221
 +
 +    @Nonnull
 +    @Override
-+    public String getVersionMessage(@Nonnull String serverVersion) {
++    public Component getVersionMessage(@Nonnull String serverVersion) {
 +        String[] parts = serverVersion.substring("git-Purpur-".length()).split("[-\\s]");
-+        String updateMessage = getUpdateStatusMessage("pl3xgaming/Purpur", GITHUB_BRANCH_NAME, parts[0]);
-+        String history = getHistory();
++        final Component updateMessage = getUpdateStatusMessage("pl3xgaming/Purpur", GITHUB_BRANCH_NAME, parts[0]);
++        final Component history = getHistory();
 +
-+        return history != null ? history + "\n" + updateMessage : updateMessage;
++        return history != null ? TextComponent.ofChildren(updateMessage, Component.newline(), history) : updateMessage;
 +    }
 +
-+    private static String getUpdateStatusMessage(@Nonnull String repo, @Nonnull String branch, @Nonnull String versionInfo) {
++    private static Component getUpdateStatusMessage(@Nonnull String repo, @Nonnull String branch, @Nonnull String versionInfo) {
 +        int distance;
 +        try {
 +            int jenkinsBuild = Integer.parseInt(versionInfo);
@@ -115,13 +163,13 @@ index 0000000000000000000000000000000000000000..d8b408f061d96e2fa8e2e587462e2221
 +
 +        switch (distance) {
 +            case -1:
-+                return "Error obtaining version information";
++                return Component.text("Error obtaining version information", NamedTextColor.YELLOW);
 +            case 0:
-+                return "You are running the latest version";
++                return Component.text("You are running the latest version", NamedTextColor.GREEN);
 +            case -2:
-+                return "Unknown version";
++                return Component.text("Unknown version", NamedTextColor.YELLOW);
 +            default:
-+                return "You are " + distance + " version(s) behind";
++                return Component.text("You are " + distance + " version(s) behind", NamedTextColor.YELLOW);
 +        }
 +    }
 +
@@ -167,7 +215,7 @@ index 0000000000000000000000000000000000000000..d8b408f061d96e2fa8e2e587462e2221
 +    }
 +
 +    @Nullable
-+    private String getHistory() {
++    private Component getHistory() {
 +        final VersionHistoryManager.VersionData data = VersionHistoryManager.INSTANCE.getVersionData();
 +        if (data == null) {
 +            return null;
@@ -178,27 +226,27 @@ index 0000000000000000000000000000000000000000..d8b408f061d96e2fa8e2e587462e2221
 +            return null;
 +        }
 +
-+        return "Previous version: " + oldVersion;
++        return Component.text("Previous version: " + oldVersion, NamedTextColor.GRAY, TextDecoration.ITALIC);
 +    }
 +}
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index f994e99ebc8fe22e6f6b45f6379ec410a598789f..eeae4862898f093ca4b9819d0d08fdaf219213a0 100644
+index aec6c036ed42078a6cc3540f1f6e46a551e87a2f..f9913d7bd66935f975b756f31e26153ec160b3b1 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 @@ -232,7 +232,7 @@ import javax.annotation.Nullable; // Paper
  import javax.annotation.Nonnull; // Paper
  
  public final class CraftServer implements Server {
--    private final String serverName = "Tuinity"; // Paper // Tuinity
-+    private final String serverName = "Purpur"; // Paper // Tuinity // Purpur
+-    private final String serverName = "Airplane"; // Paper // Tuinity // Airplane
++    private final String serverName = "Purpur"; // Paper // Tuinity // Airplane // Purpur
      private final String serverVersion;
      private final String bukkitVersion = Versioning.getBukkitVersion();
      private final Logger logger = Logger.getLogger("Minecraft");
 diff --git a/src/main/java/org/bukkit/craftbukkit/util/CraftMagicNumbers.java b/src/main/java/org/bukkit/craftbukkit/util/CraftMagicNumbers.java
-index 00e53d577b1dcaccb409e62d35165ee015de9330..7de7afae711800154735411947ff140c76d5171f 100644
+index 6141e86278d876e42dbed6e8f2275280babcef77..67f93f252a26f8b598a4b48c63c321728b246cae 100644
 --- a/src/main/java/org/bukkit/craftbukkit/util/CraftMagicNumbers.java
 +++ b/src/main/java/org/bukkit/craftbukkit/util/CraftMagicNumbers.java
-@@ -377,7 +377,7 @@ public final class CraftMagicNumbers implements UnsafeValues {
+@@ -397,7 +397,7 @@ public final class CraftMagicNumbers implements UnsafeValues {
  
      @Override
      public com.destroystokyo.paper.util.VersionFetcher getVersionFetcher() {
@@ -208,15 +256,15 @@ index 00e53d577b1dcaccb409e62d35165ee015de9330..7de7afae711800154735411947ff140c
  
      @Override
 diff --git a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
-index 001b1e5197eaa51bfff9031aa6c69876c9a47960..13b98439320ac1401a920c01d7cf5a4b3a23deff 100644
+index 1788d79ea489e446d3d9f541693d4ba3dfc26015..191f5331f0c7871f80f0da9cc38345ce33353577 100644
 --- a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
 +++ b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
 @@ -11,7 +11,7 @@ public final class Versioning {
      public static String getBukkitVersion() {
          String result = "Unknown-Version";
  
--        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/com.tuinity/tuinity-api/pom.properties"); // Tuinity
-+        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/net.pl3x.purpur/purpur-api/pom.properties"); // Tuinity // Purpur
+-        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/gg.airplane/airplane-api/pom.properties"); // Tuinity // Airplane
++        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/net.pl3x.purpur/purpur-api/pom.properties"); // Tuinity // Airplane // Purpur
          Properties properties = new Properties();
  
          if (stream != null) {

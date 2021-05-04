@@ -5,11 +5,11 @@ Subject: [PATCH] Optimize some stuff in WorldServer ticking
 
 Replaced some streams and some array lists with glue lists
 
-diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index fe6611e480c18e97061268690d067a811b13bb1b..68fda6e73db23cc8fb10501b2d84f229ea5afc7f 100644
---- a/src/main/java/net/minecraft/server/WorldServer.java
-+++ b/src/main/java/net/minecraft/server/WorldServer.java
-@@ -885,12 +885,21 @@ public class WorldServer extends World implements GeneratorAccessSeed {
+diff --git a/src/main/java/net/minecraft/server/level/WorldServer.java b/src/main/java/net/minecraft/server/level/WorldServer.java
+index 13c90105d62a599120e9872383a0c2b9aa4110cb..e584df4af6b1b29ceb3af8f267c281bc0903246c 100644
+--- a/src/main/java/net/minecraft/server/level/WorldServer.java
++++ b/src/main/java/net/minecraft/server/level/WorldServer.java
+@@ -1007,12 +1007,21 @@ public class WorldServer extends World implements GeneratorAccessSeed {
              this.server.getPlayerList().sendAll(new PacketPlayOutGameStateChange(PacketPlayOutGameStateChange.i, this.thunderLevel));
          }
          // */
@@ -34,21 +34,21 @@ index fe6611e480c18e97061268690d067a811b13bb1b..68fda6e73db23cc8fb10501b2d84f229
          if (flag != this.isRaining()) {
              // Only send weather packets to those affected
              for (int idx = 0; idx < this.players.size(); ++idx) {
-@@ -905,11 +914,9 @@ public class WorldServer extends World implements GeneratorAccessSeed {
+@@ -1027,11 +1036,9 @@ public class WorldServer extends World implements GeneratorAccessSeed {
              }
          }
          // CraftBukkit end
 +        */ // Yatopia end
  
--        if (this.everyoneSleeping && this.players.stream().noneMatch((entityplayer) -> {
+-        if (this.purpurConfig.playersSkipNight && this.everyoneSleeping && this.players.stream().noneMatch((entityplayer) -> { // Purpur
 -            return !entityplayer.isSpectator() && !entityplayer.isDeeplySleeping() && !entityplayer.fauxSleeping && !(purpurConfig.idleTimeoutCountAsSleeping && entityplayer.isAfk()); // CraftBukkit // Purpur
 -        })) {
 -            // CraftBukkit start
-+        if (this.everyoneSleeping && sleepyMatch) { // Yatopia
++        if (this.purpurConfig.playersSkipNight && this.everyoneSleeping && sleepyMatch) { // Purpur // Yatopia
              long l = this.worldData.getDayTime() + 24000L;
              TimeSkipEvent event = new TimeSkipEvent(this.getWorld(), TimeSkipEvent.SkipReason.NIGHT_SKIP, (l - l % 24000L) - this.getDayTime());
              if (this.getGameRules().getBoolean(GameRules.DO_DAYLIGHT_CYCLE)) {
-@@ -1114,9 +1121,9 @@ public class WorldServer extends World implements GeneratorAccessSeed {
+@@ -1236,9 +1243,9 @@ public class WorldServer extends World implements GeneratorAccessSeed {
      }
  
      private void wakeupPlayers() {
@@ -60,7 +60,7 @@ index fe6611e480c18e97061268690d067a811b13bb1b..68fda6e73db23cc8fb10501b2d84f229
      }
  
      // Paper start - optimise random block ticking
-@@ -1908,8 +1915,9 @@ public class WorldServer extends World implements GeneratorAccessSeed {
+@@ -2066,8 +2073,9 @@ public class WorldServer extends World implements GeneratorAccessSeed {
          // Spigot start
          if ( entity instanceof EntityHuman )
          {
@@ -71,7 +71,7 @@ index fe6611e480c18e97061268690d067a811b13bb1b..68fda6e73db23cc8fb10501b2d84f229
                  for (Object o : worldData.data.values() )
                  {
                      if ( o instanceof WorldMap )
-@@ -1926,7 +1934,7 @@ public class WorldServer extends World implements GeneratorAccessSeed {
+@@ -2084,7 +2092,7 @@ public class WorldServer extends World implements GeneratorAccessSeed {
                          }
                      }
                  }

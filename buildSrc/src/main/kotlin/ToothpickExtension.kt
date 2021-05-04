@@ -37,7 +37,7 @@ open class ToothpickExtension(objects: ObjectFactory) {
     val currentBranchDisplayName
         get() = currentBranch.replace("/${minecraftVersion}", "")
     val calcVersionString
-        get() = if(!currentBranch.startsWith("ver/")) { "${minecraftVersion}-${nmsRevision}-${currentBranchDisplayName.replace('/', '_')}" } else "${minecraftVersion}-${nmsRevision}"
+        get() = "${minecraftVersion}-${nmsRevision}"
 
     fun server(receiver: ToothpickSubproject.() -> Unit) {
         serverProject = ToothpickSubproject()
@@ -67,8 +67,11 @@ open class ToothpickExtension(objects: ObjectFactory) {
         }
     }
 
-    val paperWorkDir: File
+    val paperDecompDir: File
         get() = paperDir.resolve("work/Minecraft/${minecraftVersion}")
+
+    val paperWorkDir: File
+        get() = paperDir.resolve("work")
 
     fun getUpstreams(rootProjectDir: File): MutableList<Upstream>? {
         val configDir = rootProjectDir.resolve("$rootProjectDir/upstreamConfig")

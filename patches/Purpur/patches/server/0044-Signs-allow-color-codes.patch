@@ -4,11 +4,11 @@ Date: Thu, 6 Jun 2019 17:40:30 -0500
 Subject: [PATCH] Signs allow color codes
 
 
-diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index abe8670ec7b0ef4a93418a5e9cf23a1a536cbc96..cdc559a8330d804a269f942f5bcba84ab9ea4289 100644
---- a/src/main/java/net/minecraft/server/EntityPlayer.java
-+++ b/src/main/java/net/minecraft/server/EntityPlayer.java
-@@ -1449,6 +1449,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+diff --git a/src/main/java/net/minecraft/server/level/EntityPlayer.java b/src/main/java/net/minecraft/server/level/EntityPlayer.java
+index 6e3a3a50e01c41b40451bce05015714b5a7fe1e3..43900bb788f4baef420de0782c77d74dd7310f6e 100644
+--- a/src/main/java/net/minecraft/server/level/EntityPlayer.java
++++ b/src/main/java/net/minecraft/server/level/EntityPlayer.java
+@@ -1579,6 +1579,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
  
      @Override
      public void openSign(TileEntitySign tileentitysign) {
@@ -16,11 +16,11 @@ index abe8670ec7b0ef4a93418a5e9cf23a1a536cbc96..cdc559a8330d804a269f942f5bcba84a
          tileentitysign.a((EntityHuman) this);
          this.playerConnection.sendPacket(new PacketPlayOutOpenSignEditor(tileentitysign.getPosition()));
      }
-diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index be29ecfa00d53ad2067015a5261184b4157c604b..4d0dcbcc00e44c4912302dd0e7331471f33cb370 100644
---- a/src/main/java/net/minecraft/server/PlayerConnection.java
-+++ b/src/main/java/net/minecraft/server/PlayerConnection.java
-@@ -2902,6 +2902,15 @@ public class PlayerConnection implements PacketListenerPlayIn {
+diff --git a/src/main/java/net/minecraft/server/network/PlayerConnection.java b/src/main/java/net/minecraft/server/network/PlayerConnection.java
+index 54327914233580282ee86e46712d1ba0d176bcc4..6451d5a6d491959ea537d11d0dde077578fed381 100644
+--- a/src/main/java/net/minecraft/server/network/PlayerConnection.java
++++ b/src/main/java/net/minecraft/server/network/PlayerConnection.java
+@@ -3073,6 +3073,15 @@ public class PlayerConnection implements PacketListenerPlayIn {
                      }
                  }
                  // Paper end
@@ -36,19 +36,19 @@ index be29ecfa00d53ad2067015a5261184b4157c604b..4d0dcbcc00e44c4912302dd0e7331471
                  lines.add(net.kyori.adventure.text.Component.text(SharedConstants.filterAllowedChatCharacters(currentLine))); // Paper - Replaced with anvil color stripping method to stop exploits that allow colored signs to be created.
              }
              SignChangeEvent event = new SignChangeEvent(org.bukkit.craftbukkit.block.CraftBlock.at(worldserver, blockposition), this.getPlayer(), lines);
-diff --git a/src/main/java/net/minecraft/server/TileEntitySign.java b/src/main/java/net/minecraft/server/TileEntitySign.java
-index 1e6bb566c0a718bba289b2e727a832e0aa6b7f15..cbbaf8ca4b6425e2ce58e500b13b3b5269704c3c 100644
---- a/src/main/java/net/minecraft/server/TileEntitySign.java
-+++ b/src/main/java/net/minecraft/server/TileEntitySign.java
-@@ -2,6 +2,7 @@ package net.minecraft.server;
+diff --git a/src/main/java/net/minecraft/world/level/block/entity/TileEntitySign.java b/src/main/java/net/minecraft/world/level/block/entity/TileEntitySign.java
+index 96d0524482281f8570464962c0fd5319199440d7..a87a2fa507dc3bd6d9979db5868e7ef6ea1eddbd 100644
+--- a/src/main/java/net/minecraft/world/level/block/entity/TileEntitySign.java
++++ b/src/main/java/net/minecraft/world/level/block/entity/TileEntitySign.java
+@@ -1,6 +1,7 @@
+ package net.minecraft.world.level.block.entity;
  
  import com.mojang.brigadier.exceptions.CommandSyntaxException;
- import javax.annotation.Nullable;
 +import io.papermc.paper.adventure.PaperAdventure; // Purpur
- 
- public class TileEntitySign extends TileEntity implements ICommandListener { // CraftBukkit - implements
- 
-@@ -92,6 +93,18 @@ public class TileEntitySign extends TileEntity implements ICommandListener { //
+ import javax.annotation.Nullable;
+ import net.minecraft.commands.CommandListenerWrapper;
+ import net.minecraft.commands.ICommandListener;
+@@ -112,6 +113,18 @@ public class TileEntitySign extends TileEntity implements ICommandListener { //
          this.g[i] = null;
      }
  
@@ -68,7 +68,7 @@ index 1e6bb566c0a718bba289b2e727a832e0aa6b7f15..cbbaf8ca4b6425e2ce58e500b13b3b52
      @Override
      public PacketPlayOutTileEntityData getUpdatePacket() {
 diff --git a/src/main/java/net/pl3x/purpur/PurpurWorldConfig.java b/src/main/java/net/pl3x/purpur/PurpurWorldConfig.java
-index 8393a0253ac16a8f15f78288d6cc31f8688c403c..484da2bf267cab4e4569c98111398af64c834eed 100644
+index ea95a4116371d58eb36be51093af7f0fa28e3dfd..b67f87f38d0ff99ff62d2103ecc737317a435102 100644
 --- a/src/main/java/net/pl3x/purpur/PurpurWorldConfig.java
 +++ b/src/main/java/net/pl3x/purpur/PurpurWorldConfig.java
 @@ -109,8 +109,10 @@ public class PurpurWorldConfig {

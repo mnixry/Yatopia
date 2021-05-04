@@ -1,9 +1,9 @@
 import com.github.jengelman.gradle.plugins.shadow.ShadowPlugin
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 // import com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer
-import xyz.jpenilla.toothpick.transformer.ModifiedLog4j2PluginsCacheFileTransformer
+import transformer.ModifiedLog4j2PluginsCacheFileTransformer
+import relocation.ToothpickRelocator
 import kotlinx.dom.elements
-import kotlinx.dom.parseXml
 import kotlinx.dom.search
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -148,8 +148,7 @@ private fun Project.configureServerProject() {
         destination = project.buildDir.resolve("tmp/pom.xml")
     }
 
-    @Suppress("UNUSED_VARIABLE")
-    val test by tasks.getting(Test::class) {
+    tasks.withType<Test> {
         // didn't bother to look into why these fail. paper excludes them in paperweight as well though
         exclude("org/bukkit/craftbukkit/inventory/ItemStack*Test.class")
     }
@@ -158,7 +157,6 @@ private fun Project.configureServerProject() {
         archiveClassifier.set("") // ShadowJar is the main server artifact
         dependsOn(generatePomFileForMavenJavaPublication)
         transform(ModifiedLog4j2PluginsCacheFileTransformer::class.java)
-        //transform(Log4j2PluginsCacheFileTransformer::class.java)
         mergeServiceFiles()
         manifest {
             attributes(
@@ -182,13 +180,10 @@ private fun Project.configureServerProject() {
         relocate("org.bukkit.craftbukkit", "org.bukkit.craftbukkit.v${toothpick.nmsPackage}") {
             exclude("org.bukkit.craftbukkit.Main*")
         }
-        relocate("net.minecraft.server", "net.minecraft.server.v${toothpick.nmsPackage}")
         relocationSet.add(PatchesMetadata.Relocation("", "net.minecraft.server.v${toothpick.nmsPackage}", false))
 
         // Make sure we relocate deps the same as Paper et al.
-        val pomFile = project.projectDir.resolve("pom.xml")
-        if (!pomFile.exists()) return@getting
-        val dom = parseXml(pomFile)
+        val dom = project.parsePom() ?: return@getting
         val buildSection = dom.search("build").first()
         val plugins = buildSection.search("plugins").first()
         plugins.elements("plugin").filter {
@@ -202,9 +197,17 @@ private fun Project.configureServerProject() {
                     .elements("relocation").forEach { relocation ->
                         val pattern = relocation.search("pattern").first().textContent
                         val shadedPattern = relocation.search("shadedPattern").first().textContent
-                        if (pattern != "org.bukkit.craftbukkit" && pattern != "net.minecraft.server") { // We handle these ourselves above
-                            logger.debug("Imported relocation to server project shadowJar from ${pomFile.absolutePath}: $pattern to $shadedPattern")
-                            relocate(pattern, shadedPattern)
+                        val rawString = relocation.search("rawString").firstOrNull()?.textContent?.toBoolean() ?: false
+                        if (pattern != "org.bukkit.craftbukkit") { // We handle cb ourselves
+                            val excludes = if (rawString) listOf("net/minecraft/data/Main*") else emptyList()
+                            relocate(
+                            ToothpickRelocator(
+                                pattern,
+                                shadedPattern.replace("\${minecraft_version}", toothpick.nmsPackage),
+                                rawString,
+                                excludes = excludes
+                            )
+                            )
                             relocationSet.add(PatchesMetadata.Relocation(pattern, shadedPattern, true))
                         }
                     }

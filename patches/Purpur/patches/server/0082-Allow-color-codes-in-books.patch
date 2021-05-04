@@ -4,11 +4,11 @@ Date: Tue, 3 Nov 2020 01:25:06 -0600
 Subject: [PATCH] Allow color codes in books
 
 
-diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 4d0dcbcc00e44c4912302dd0e7331471f33cb370..70cb98b3db5f9966e91da0ccd81e7610455a4f4e 100644
---- a/src/main/java/net/minecraft/server/PlayerConnection.java
-+++ b/src/main/java/net/minecraft/server/PlayerConnection.java
-@@ -1058,7 +1058,8 @@ public class PlayerConnection implements PacketListenerPlayIn {
+diff --git a/src/main/java/net/minecraft/server/network/PlayerConnection.java b/src/main/java/net/minecraft/server/network/PlayerConnection.java
+index 6451d5a6d491959ea537d11d0dde077578fed381..e63e7f30db64d30840037d996c153822ce80fbbd 100644
+--- a/src/main/java/net/minecraft/server/network/PlayerConnection.java
++++ b/src/main/java/net/minecraft/server/network/PlayerConnection.java
+@@ -1211,7 +1211,8 @@ public class PlayerConnection implements PacketListenerPlayIn {
          if (itemstack.getItem() == Items.WRITABLE_BOOK) {
              NBTTagList nbttaglist = new NBTTagList();
  
@@ -17,8 +17,8 @@ index 4d0dcbcc00e44c4912302dd0e7331471f33cb370..70cb98b3db5f9966e91da0ccd81e7610
 +            list.stream().map(s -> s = color(s, hasPerm, false)).map(NBTTagString::a).forEach(nbttaglist::add); // Purpur - edit book
              ItemStack old = itemstack.cloneItemStack(); // CraftBukkit
              itemstack.a("pages", (NBTBase) nbttaglist);
-             CraftEventFactory.handleEditBookEvent(player, i, old, itemstack); // CraftBukkit
-@@ -1076,13 +1077,14 @@ public class PlayerConnection implements PacketListenerPlayIn {
+             this.player.inventory.setItem(i, CraftEventFactory.handleEditBookEvent(player, i, old, itemstack)); // CraftBukkit // Paper - Don't ignore result (see other callsite for handleEditBookEvent)
+@@ -1229,13 +1230,14 @@ public class PlayerConnection implements PacketListenerPlayIn {
                  itemstack1.setTag(nbttagcompound.clone());
              }
  
@@ -35,7 +35,7 @@ index 4d0dcbcc00e44c4912302dd0e7331471f33cb370..70cb98b3db5f9966e91da0ccd81e7610
                  ChatComponentText chatcomponenttext = new ChatComponentText(s1);
                  String s2 = IChatBaseComponent.ChatSerializer.a((IChatBaseComponent) chatcomponenttext);
  
-@@ -1094,6 +1096,16 @@ public class PlayerConnection implements PacketListenerPlayIn {
+@@ -1247,6 +1249,16 @@ public class PlayerConnection implements PacketListenerPlayIn {
          }
      }
  

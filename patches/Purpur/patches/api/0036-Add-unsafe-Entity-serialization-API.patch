@@ -17,12 +17,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 diff --git a/src/main/java/org/bukkit/UnsafeValues.java b/src/main/java/org/bukkit/UnsafeValues.java
-index 632e53338c4d902aea7e8589152b1c1b6e6dde6a..e64d28359c6f5180f1dfd3896a5ba99fd30a943c 100644
+index 5f2d5e12f11b471662943680b2012c99a8466306..7395fe0261da696d1b16c845d244ad5d6957d92a 100644
 --- a/src/main/java/org/bukkit/UnsafeValues.java
 +++ b/src/main/java/org/bukkit/UnsafeValues.java
-@@ -136,4 +136,28 @@ public interface UnsafeValues {
-     public int nextEntityId();
- 
+@@ -165,4 +165,28 @@ public interface UnsafeValues {
+      */
+     int getProtocolVersion();
      // Paper end
 +
 +    // Purpur start
@@ -50,7 +50,7 @@ index 632e53338c4d902aea7e8589152b1c1b6e6dde6a..e64d28359c6f5180f1dfd3896a5ba99f
 +    // Purpur end
  }
 diff --git a/src/main/java/org/bukkit/entity/Entity.java b/src/main/java/org/bukkit/entity/Entity.java
-index c51d545e137eec2017c9f2ff944db70f2fdffdfc..1e25f387e053b648477a3e9dace1a6c95e7f8cba 100644
+index b47e31d2b9b41b39b46892fe10bf36d82c5d8e1b..7fa5242bd44c9b19648d79fa8fecbb7ee125288e 100644
 --- a/src/main/java/org/bukkit/entity/Entity.java
 +++ b/src/main/java/org/bukkit/entity/Entity.java
 @@ -751,5 +751,24 @@ public interface Entity extends Metadatable, CommandSender, Nameable, Persistent

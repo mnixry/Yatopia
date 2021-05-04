@@ -6,11 +6,11 @@ Subject: [PATCH] Do not retain playerchunkmap instance in light thread factory
 The executor returned is finalizable and of course
 that causes issues.
 
-diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-index 2d15a4ea2958c4597269ba50bcd82282ee8e3bf0..8c4a350d59b20efb3f3c6c19e0ae0b676465de70 100644
---- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
-+++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-@@ -341,9 +341,10 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+diff --git a/src/main/java/net/minecraft/server/level/PlayerChunkMap.java b/src/main/java/net/minecraft/server/level/PlayerChunkMap.java
+index 7897fe870234ddef12926d855a3f060f9a72b2ba..82e28afc75d93c39d6b6517faf6430183cb675fb 100644
+--- a/src/main/java/net/minecraft/server/level/PlayerChunkMap.java
++++ b/src/main/java/net/minecraft/server/level/PlayerChunkMap.java
+@@ -410,9 +410,10 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
  
          this.worldLoadListener = worldloadlistener;
          // Paper start - use light thread
